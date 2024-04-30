@@ -48,6 +48,10 @@ function prettyPrint(array)
     print("------------")
 end
 
+function prettyPrintPosition(position)
+    print("row: ", position.row, " col: ", position.col)
+end
+
 function FindValueInState(state, value)
     for row, rowData in pairs(state) do
         for col, colData in pairs(rowData) do
@@ -109,11 +113,11 @@ function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
     local currentPositon = FindValueInState(currentState, targetValue)
     local blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
 
-    if (blankPosition.row == 1) then
-        blankPosition = moveBlankDown(currentState, blankPosition)
-        blankPosition = moveBlankDown(currentState, blankPosition)
-    end
-    currentPositon = FindValueInState(currentState, targetValue)
+    -- if (blankPosition.row == 1) then
+    --     blankPosition = moveBlankDown(currentState, blankPosition)
+    --     blankPosition = moveBlankDown(currentState, blankPosition)
+    -- end
+    -- currentPositon = FindValueInState(currentState, targetValue)
 
 
     prettyPrint(currentState)
@@ -159,9 +163,15 @@ function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
     -- If we are in the same row as the target and we need to move past it, then we should move down one first
     -- Do the movement col
     local verticalAdjustment = false
+    prettyPrintPosition(currentPositon)
+    prettyPrintPosition(blankPosition)
+    print(isBlankToTheLeft)
+    print(needsToMoveLeft)
+
     if (blankPosition.row == currentPositon.row and ((not isBlankToTheLeft and needsToMoveLeft) or (isBlankToTheLeft and not needsToMoveLeft))) then
         verticalAdjustment = true
     end
+    print(verticalAdjustment)
 
     if (verticalAdjustment == true) then
         print(blankPosition.row)
@@ -177,7 +187,7 @@ function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
                 blankPosition = moveBlankLeft(currentState, blankPosition)
             end
         else
-            for i = 1, math.abs(blankPosition.col - currentPositon.col - 1), 1 do
+            for i = 0, math.abs(blankPosition.col - currentPositon.col - 1), 1 do
                 blankPosition = moveBlankLeft(currentState, blankPosition)
             end
         end
@@ -205,8 +215,8 @@ function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
         end
     end
     if (blankPosition.row ~= currentPositon.row) then
-        if (needsToMoveDown == true) then
-            for i = 0, math.abs(blankPosition.row - currentPositon.row), 1 do
+        if (not isBlankAbove) then
+            for i = 1, math.abs(blankPosition.row - currentPositon.row), 1 do
                 blankPosition = moveBlankUp(currentState, blankPosition)
             end
         else

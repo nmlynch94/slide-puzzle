@@ -65,7 +65,7 @@ end
 prettyPrint(state)
 print("-----------------END-------------------")
 
-print("Start test moving left with a necessary vertical adjustment down to avoid the target of 10")
+print("Start test moving left with a necessary vertical adjustment down to avoid the target of 6")
 local testState = {
     {8, 20, 1, 4, 5},
     {2, 10, 6, 9, 0},
@@ -74,10 +74,10 @@ local testState = {
     {21, 21, 22, 23, 24},
 }
 prettyPrint(testState)
-local state = MoveTileToDesiredPosition(10, testState, desiredState)
+local state = MoveTileToDesiredPosition(6, testState, desiredState)
 local blankPosition = FindValueInState(testState, 0)
-local targetPosition = FindValueInState(testState, 10)
-if ((blankPosition.col ~= 3 or blankPosition.row ~= 2) or (targetPosition.col ~= 2 or targetPosition.row ~= 2)) then
+local targetPosition = FindValueInState(testState, 6)
+if ((blankPosition.col ~= 2 or blankPosition.row ~= 2) or (targetPosition.col ~= 3 or targetPosition.row ~= 2)) then
     error("Didn't work")
 end
 prettyPrint(state)
@@ -128,7 +128,7 @@ local testState = {
 local state = MoveTileToDesiredPosition(22, testState, desiredState)
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 22)
-if ((blankPosition.col ~= 2 or blankPosition.row ~= 1) or (targetPosition.col ~= 3 or targetPosition.row ~= 1)) then
+if ((blankPosition.col ~= 3 or blankPosition.row ~= 5) or (targetPosition.col ~= 4 or targetPosition.row ~= 5)) then
     error("Didn't work")
 end
 prettyPrint(state)
