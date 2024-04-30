@@ -35,7 +35,7 @@ local function deepCopy(original)
     return copy
 end
 
-local function prettyPrint(array)
+function prettyPrint(array)
     for i, row in ipairs(array) do
         for j, value in ipairs(row) do
             io.write(string.format("%4d", value))
@@ -58,476 +58,172 @@ function FindValueInState(state, value)
     end
 end
 
-local blankPosition = FindValueInState(currentState, 0)
-MOVES = {}
-UNCOMMITTEDMOVES = {}
-LockedPositions = {}
-
-local function moveBlankRight()
+local function moveBlankRight(state, blankPosition)
     print("RIGHT")
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    table.insert(UNCOMMITTEDMOVES, {direction = "RIGHT", position = {col = blankPosition.col + 1, row = blankPosition.row}})
-    currentState[blankPosition.row][blankPosition.col] = currentState[blankPosition.row][blankPosition.col + 1]
-    currentState[blankPosition.row][blankPosition.col + 1] = BLANK_SPACE_VALUE
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    prettyPrint(currentState)
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    state[blankPosition.row][blankPosition.col] = state[blankPosition.row][blankPosition.col + 1]
+    state[blankPosition.row][blankPosition.col + 1] = BLANK_SPACE_VALUE
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    prettyPrint(state)
+    return blankPosition
 end
 
-local function moveBlankLeft()
+local function moveBlankLeft(state, blankPosition)
     print("LEFT")
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    table.insert(UNCOMMITTEDMOVES, {direction = "LEFT", position = {col = blankPosition.col - 1, row = blankPosition.row}})
-    currentState[blankPosition.row][blankPosition.col] = currentState[blankPosition.row][blankPosition.col - 1]
-    currentState[blankPosition.row][blankPosition.col - 1] = BLANK_SPACE_VALUE
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    prettyPrint(currentState)
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    state[blankPosition.row][blankPosition.col] = state[blankPosition.row][blankPosition.col - 1]
+    state[blankPosition.row][blankPosition.col - 1] = BLANK_SPACE_VALUE
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    prettyPrint(state)
+    return blankPosition
 end
 
-local function moveBlankUp()
+local function moveBlankUp(state, blankPosition)
     print("UP")
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    table.insert(UNCOMMITTEDMOVES, {direction = "UP", position = {col = blankPosition.col, row = blankPosition.row - 1}})
-    currentState[blankPosition.row][blankPosition.col] = currentState[blankPosition.row - 1][blankPosition.col]
-    currentState[blankPosition.row - 1][blankPosition.col] = BLANK_SPACE_VALUE
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    prettyPrint(currentState)
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    state[blankPosition.row][blankPosition.col] = state[blankPosition.row - 1][blankPosition.col]
+    state[blankPosition.row - 1][blankPosition.col] = BLANK_SPACE_VALUE
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    prettyPrint(state)
+    return blankPosition
 end
 
-local function moveBlankDown()
+local function moveBlankDown(state, blankPosition)
     print("DOWN")
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    table.insert(UNCOMMITTEDMOVES, {direction = "DOWN", position = {col = blankPosition.col, row = blankPosition.row + 1}})
-    currentState[blankPosition.row][blankPosition.col] = currentState[blankPosition.row + 1][blankPosition.col]
-    currentState[blankPosition.row + 1][blankPosition.col] = BLANK_SPACE_VALUE
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    prettyPrint(currentState)
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    state[blankPosition.row][blankPosition.col] = state[blankPosition.row + 1][blankPosition.col]
+    state[blankPosition.row + 1][blankPosition.col] = BLANK_SPACE_VALUE
+    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    prettyPrint(state)
+    return blankPosition
 end
 
--- assumes the blank is one in the direction that needs to be moved in
-local function moveInDirectionAlgorithm(direction)
+local function moveBlankRelativeToPosition(targetValue, relativePositionXY)
+    local valuePosition = FindValueInState(currentState, targetValue)
+    local targetPosition = {col = valuePosition.col + relativePositionXY.col, row = valuePosition.row + relativePositionXY.row}
+    print("Target position is col: ", targetPosition.col, " row: ", targetPosition.row)
+end
 
-    local spaceAbove = blankPosition.row - 1 >= 0
-    local spaceBelow = blankPosition.row + 1 < #desiredState
-    local spaceRight = blankPosition.col + 1 < #desiredState
-    local spaceLeft = blankPosition.col - 1 >= 0
+function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
+    local desiredPositon = FindValueInState(desiredState, targetValue)
+    local currentPositon = FindValueInState(currentState, targetValue)
+    local blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
+
+    if (blankPosition.row == 1) then
+        blankPosition = moveBlankDown(currentState, blankPosition)
+        blankPosition = moveBlankDown(currentState, blankPosition)
+    end
+    currentPositon = FindValueInState(currentState, targetValue)
+
+
+    prettyPrint(currentState)
+
+    if (desiredPositon.col == currentPositon.col and desiredPositon.row == currentPositon.row) then
+        print("No movement needed. Target tile ", targetValue, " is in position")
+        return "No movement needed"
+    end
+
+    -- Do we need to move left or right
+    local needsToMoveLeft = false
+    if (desiredPositon.col < currentPositon.col) then
+        needsToMoveLeft = true
+    end
     
-    if (direction == "LEFT") then
-        if (spaceBelow == true) then
-            
-        end
+    local needsToMoveDown = false
+    if (desiredPositon.row > currentPositon.row) then
+        needsToMoveDown = true
     end
 
-end
-
---
-local function moveX(spaces, position, state)
-    -- move blank space to the side of the "1". Left if we want to move left, or right if we want to move right
-    local desiredBlankPosition
-    if (spaces > 0) then
-        desiredBlankPosition = {col = position.col + 1, row = position.row}
+    -- If the target needs to move left, we want to place the blank space to the left before we move
+    local targetBlankStartingPositon = {}
+    if (needsToMoveLeft == true) then
+        targetBlankStartingPositon = {col = currentPositon.col - 1, row = currentPositon.row}
     else
-        desiredBlankPosition = {col = position.col - 1, row = position.row}
+        targetBlankStartingPositon = {col = currentPositon.col + 1, row = currentPositon.row}
     end
 
-    local diffX = (desiredBlankPosition.col - blankPosition.col)
-    local diffY = (desiredBlankPosition.row - blankPosition.row)
+    -- Is the blank space to the left or to the right
+    local isBlankToTheLeft = false
+    if (blankPosition.col < targetBlankStartingPositon.col) then
+        isBlankToTheLeft = true
+    end
 
-    print("blank is at: ", blankPosition.row, ", ", blankPosition.col)
-    print("we want it at: ", desiredBlankPosition.row, ", ", desiredBlankPosition.col)
-    while (blankPosition.col ~= desiredBlankPosition.col) do
-        if (diffX > 0) then
-            moveBlankRight()
-        elseif (diffX < 0) then
-            moveBlankLeft()
+    -- Is the blank space above or below
+    local isBlankAbove = false
+    if (blankPosition.row < targetBlankStartingPositon.row) then
+        isBlankAbove = true
+    end
+
+    -- We need to move left
+
+    -- If we are in the same row as the target and we need to move past it, then we should move down one first
+    -- Do the movement col
+    local verticalAdjustment = false
+    if (blankPosition.row == currentPositon.row and ((not isBlankToTheLeft and needsToMoveLeft) or (isBlankToTheLeft and not needsToMoveLeft))) then
+        verticalAdjustment = true
+    end
+
+    if (verticalAdjustment == true) then
+        print(blankPosition.row)
+        if (blankPosition.row == 5) then
+            blankPosition = moveBlankUp(currentState, blankPosition)
+        else 
+            blankPosition = moveBlankDown(currentState, blankPosition)
         end
     end
-
-    while (blankPosition.row ~= desiredBlankPosition.row) do
-        if (diffY > 0) then
-            moveBlankDown()
-        elseif (diffY < 0) then
-            moveBlankUp()
-        end
-    end
-
-    if (spaces == 1) then
-        -- move x one position to get the 1 into the right location
-        moveBlankLeft()
-    elseif (spaces == -1) then
-        moveBlankRight()
-    elseif (spaces < 0) then
-        moveInDirectionAlgorithm("LEFT")
-    elseif (spaces > 0) then
-        moveInDirectionAlgorithm("RIGHT")
-    end
-end
-
-local function moveY(spaces, position, state)
-    print("BEGIN MOVE Y")
-    -- move blank space above the "1"
-    local desiredBlankPosition
-    desiredBlankPosition = {col = position.col + 1, row = position.row}
- 
-    local diffX = (desiredBlankPosition.col - blankPosition.col)
-    local diffY = (desiredBlankPosition.row - blankPosition.row)
-
-    print("blank is at: ", blankPosition.row, ", ", blankPosition.col)
-    print("we want it at: ", desiredBlankPosition.row, ", ", desiredBlankPosition.col)
-
-    print(diffY)
-    while (blankPosition.row ~= desiredBlankPosition.row) do
-        if (diffY > 0) then
-            moveBlankDown()
-        elseif (diffY < 0) then
-            moveBlankUp()
-        end
-    end
-
-    while (blankPosition.col ~= desiredBlankPosition.col) do
-        if (diffX > 0) then
-            moveBlankRight()
-        elseif (diffX < 0) then
-            moveBlankLeft()
-        end
-    end
-
-    if (spaces == 1) then
-        -- move x one position to get the 1 into the right location
-        moveBlankUp()
-    elseif (spaces == -1) then
-        moveBlankDown()
-    elseif (spaces < 0) then
-        moveInDirectionAlgorithm("UP")
-    else
-        moveInDirectionAlgorithm("DOWN")
-    end
-    print("END MOVE Y")
-end
-
-local function movesAreSafe(isMoveTargetValueSafetyEnabled, stateSnapshot, value)
-    -- Loop through the array of tables
-    local movesAreSafe = true
-    for index, uncommittedMovePosition in ipairs(currentState) do
-        if (#uncommittedMovePosition > #desiredState) then
-            movesAreSafe = false
-            break
-        end
-    end
-    for index, uncommittedMovePosition in ipairs(UNCOMMITTEDMOVES) do
-        if (uncommittedMovePosition.position.row == nil or uncommittedMovePosition.position.col == nil) then
-            movesAreSafe = false
-            break
-        end
-        for index, lockedPosition in ipairs(LockedPositions) do
-            if (uncommittedMovePosition.position.row == lockedPosition.row and uncommittedMovePosition.position.col == lockedPosition.col) then
-                movesAreSafe = false
-                print("row: ", uncommittedMovePosition.position.row, " col: ", uncommittedMovePosition.position.col, " is locked")
-                break
+    if (blankPosition.col ~= currentPositon.col) then
+        if (needsToMoveLeft == true) then
+            for i = 0, math.abs(blankPosition.col - currentPositon.col), 1 do
+                blankPosition = moveBlankLeft(currentState, blankPosition)
             end
-            local valuePositionBeforeMoveSet = FindValueInState(stateSnapshot, value)
-        
-            if (isMoveTargetValueSafetyEnabled == true and (uncommittedMovePosition.position.row == valuePositionBeforeMoveSet.row and uncommittedMovePosition.position.col == valuePositionBeforeMoveSet.col)) then
-                print("Avoid moving the target value. Rolling back.")
-                movesAreSafe = false
-                break
+        else
+            for i = 1, math.abs(blankPosition.col - currentPositon.col - 1), 1 do
+                blankPosition = moveBlankLeft(currentState, blankPosition)
             end
         end
     end
-    return movesAreSafe
-end
-
-local function revertState(revertTarget)
-    print("Locked move detected. Reverting state to below")
-    currentState = revertTarget
-    blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-    UNCOMMITTEDMOVES = {}
-    prettyPrint(currentState)
-end
-
-local function commitMoves() 
-    for index, uncommittedMovePosition in ipairs(UNCOMMITTEDMOVES) do
-        table.insert(MOVES, uncommittedMovePosition)
-    end
-    UNCOMMITTEDMOVES = {}
-end
-
-local function movementAlgorithm(useSpace, direction, value)
-    print("BEGINNING MOVEMENT")
-    if (direction == "LEFT" or direction == "RIGHT") then
-        if (direction == "RIGHT") then
-            moveBlankLeft()
-        elseif (direction == "LEFT") then
-            moveBlankRight()
-        end
-        if (useSpace == "BELOW") then
-            moveBlankDown()
-        elseif (useSpace == "ABOVE") then
-            moveBlankUp()
-        end
-        if (direction == "RIGHT") then
-            moveBlankRight()
-            moveBlankRight()
-        elseif (direction == "LEFT") then
-            moveBlankLeft()
-            moveBlankLeft()
-        end
-        if (useSpace == "BELOW") then
-            moveBlankUp()
-        elseif (useSpace == "ABOVE") then
-            moveBlankDown()
-        end
-    elseif (direction == "UP" or direction == "DOWN") then
-        if (direction == "UP") then
-            moveBlankDown()
-        elseif (direction == "DOWN") then
-            moveBlankUp()
-        end
-        if (useSpace == "LEFT") then
-            moveBlankLeft()
-        elseif (useSpace == "RIGHT") then
-            moveBlankRight()
-        end
-        if (direction == "DOWN") then
-            moveBlankDown()
-            moveBlankDown()
-        elseif (direction == "UP") then
-            moveBlankUp()
-            moveBlankUp()
-        end
-        if (useSpace == "LEFT") then
-            moveBlankRight()
-        elseif (useSpace == "RIGHT") then
-            moveBlankLeft()
+    if (verticalAdjustment == true) then
+        if (blankPosition.row == 4) then
+            blankPosition = moveBlankDown(currentState, blankPosition)
+        else
+            blankPosition = moveBlankUp(currentState, blankPosition)
         end
     end
-end
 
-local function moveBlankRelativeToValueX(value, colDifference, rowDifference)
-    local valuePosition = FindValueInState(currentState, value)
-    print(blankPosition.col)
-    print(valuePosition.col)
-    print(blankPosition.row)
-    print(valuePosition.row)
-    print(rowDifference)
-    print(colDifference)
-    while(blankPosition.col ~= valuePosition.col + colDifference or blankPosition.row ~= valuePosition.row + rowDifference) do
-        -- backup state so we can dry run some routes
-        while (blankPosition.col ~= valuePosition.col + colDifference) do
+    -- If we are in the same row as the target and we need to move past it, then we should move down one first
+    -- Do the movement row
+    local horizontalAdjustment = false
+    if (blankPosition.col == currentPositon.col and ((isBlankAbove and needsToMoveDown) or (not isBlankAbove and not needsToMoveDown))) then
+        horizontalAdjustment = true
+    end
 
-            local restorePoint = deepCopy(currentState)
-            local delta = { deltaCol = valuePosition.col + colDifference - blankPosition.col, deltaRow = valuePosition.row + rowDifference - blankPosition.row}
-            print("We need to move columns: ", delta.deltaCol, " and rows1: ", delta.deltaRow)
-            
-            if (delta.deltaCol > 0) then
-                moveBlankRight()
-            elseif (delta.deltaCol < 0) then
-                moveBlankLeft()
-            end
-            if (movesAreSafe(true, restorePoint, value)) then
-                commitMoves()
-                restorePoint = deepCopy(currentState)
-            else
-                revertState(restorePoint)
-                print("Moving to the right side of the board and trying again")
-                if (blankPosition.row + 1 <= #desiredState) then
-                    moveBlankDown()
-                end
-                while (blankPosition.col ~= #desiredState) do
-                    moveBlankRight()
-                end
-                if (movesAreSafe(true, restorePoint, value)) then
-                    commitMoves()
-                    restorePoint = deepCopy(currentState)
-                else
-                    revertState(restorePoint)
-                    print("Moving up one and trying again")
-                    if (blankPosition.row - 1 >= 0) then
-                        moveBlankUp()
-                    end
-                end
-            end
-            valuePosition = FindValueInState(currentState, value)
-        end
-        -- stop if the column is the same to avoid an infinite loop
-        while (blankPosition.row ~= valuePosition.row + rowDifference) do
-
-            local restorePoint = deepCopy(currentState)
-            local delta = { deltaCol = valuePosition.col - blankPosition.col, deltaRow = valuePosition.row + rowDifference - blankPosition.row}
-            print("We need to move columns: ", delta.deltaCol, " and rows3: ", delta.deltaRow)
-            
-            if (delta.deltaRow > 0) then
-                moveBlankDown()
-            elseif (delta.deltaRow < 0) then
-                moveBlankUp()
-            end
-            if (movesAreSafe(true, restorePoint, value)) then
-                commitMoves()
-                restorePoint = deepCopy(currentState)
-            else
-                revertState(restorePoint)
-                print("Moving to the right side of the board and trying again")
-                print(blankPosition.row)
-                print(#desiredState)
-                if (blankPosition.row + 1 <= #desiredState) then
-                    moveBlankDown()
-                end
-                if (blankPosition.col + 1 < #desiredState) then
-                    while (blankPosition.col ~= #desiredState) do
-                        moveBlankRight()
-                    end
-                else
-                    moveBlankLeft()
-                    moveBlankUp()
-                end
-                if (movesAreSafe(true, restorePoint, value)) then
-                    commitMoves()
-                    restorePoint = deepCopy(currentState)
-                else
-                    revertState(restorePoint)
-                    print("Moving up one and trying again")
-                    if (blankPosition.row - 1 >= 0) then
-                        moveBlankUp()
-                    end
-                end
-            end
-            
-            valuePosition = FindValueInState(currentState, value)
+    if (horizontalAdjustment == true) then
+        if (blankPosition.col == 5) then
+            blankPosition = moveBlankLeft(currentState, blankPosition)
+        else 
+            blankPosition = moveBlankRight(currentState, blankPosition)
         end
     end
-end
-
-local function moveTileToDesiredPosition(value, colModifier, rowModifier) -- Hack to make the last tile in the row slot in easier
-    prettyPrint(currentState)
-    print("Tryign to move: ", value)
-    -- get the directions the value needs to move to arrive
-    local currentTilePosition = FindValueInState(currentState, value)
-    local desiredTilePosition = FindValueInState(desiredState, value)
-    desiredTilePosition.col = desiredTilePosition.col + colModifier
-    desiredTilePosition.row = desiredTilePosition.row + rowModifier
-    local stateSnapshot = deepCopy(currentState)
-
-    local delta = { deltaCol = desiredTilePosition.col - currentTilePosition.col, deltaRow = desiredTilePosition.row - currentTilePosition.row }
-    while (currentTilePosition.row ~= desiredTilePosition.row or currentTilePosition.col ~= desiredTilePosition.col) do
-        stateSnapshot = deepCopy(currentState)
-    -- if we need to go left, then move the position to the left of the desired tile
-        if (delta.deltaCol < 0) then
-            moveBlankRelativeToValueX(value, -1, 0)
-            while (currentTilePosition.row ~= desiredTilePosition.row or currentTilePosition.col ~= desiredTilePosition.col) do
-                print("NEW LOOP: ", currentTilePosition.col, " ", currentTilePosition.row)
-                delta = { deltaCol = desiredTilePosition.col - currentTilePosition.col, deltaRow = desiredTilePosition.row - currentTilePosition.row }
-                stateSnapshot = deepCopy(currentState)
-                if (delta.deltaCol == 0) then
-                    print("No column movement needed")
-                    break
-                elseif (delta.deltaCol == -1) then
-                    moveBlankRight()
-                else
-                    movementAlgorithm("BELOW", "LEFT", value)
-                    if (movesAreSafe(false, stateSnapshot, value)) then
-                        commitMoves()
-                    else
-                        revertState(stateSnapshot)
-                        print("Trying to reverse return direction to get move safety")
-                        movementAlgorithm("ABOVE", "LEFT", value)
-                    end
-                end
-                currentTilePosition = FindValueInState(currentState, value)
-                desiredTilePosition = FindValueInState(desiredState, value)
-                desiredTilePosition.col = desiredTilePosition.col + colModifier
-                desiredTilePosition.row = desiredTilePosition.row + rowModifier
+    if (blankPosition.row ~= currentPositon.row) then
+        if (needsToMoveDown == true) then
+            for i = 0, math.abs(blankPosition.row - currentPositon.row), 1 do
+                blankPosition = moveBlankUp(currentState, blankPosition)
+            end
+        else
+            for i = 1, math.abs(blankPosition.row - currentPositon.row), 1 do
+                blankPosition = moveBlankDown(currentState, blankPosition)
             end
         end
-        if (delta.deltaCol > 0) then
-            moveBlankRelativeToValueX(value, 1, 0)
-            while (currentTilePosition.row ~= desiredTilePosition.row or currentTilePosition.col ~= desiredTilePosition.col) do
-                stateSnapshot = deepCopy(currentState)
-                print("NEW LOOP: ", currentTilePosition.col, " ", currentTilePosition.row)
-                prettyPrint(currentState)
-                delta = { deltaCol = desiredTilePosition.col - currentTilePosition.col, deltaRow = desiredTilePosition.row - currentTilePosition.row }
-                stateSnapshot = deepCopy(currentState)
-                if (delta.deltaCol == 0) then
-                    print("No column movement needed")
-                    break
-                elseif (delta.deltaCol == 1) then
-                    print("here")
-                    moveBlankLeft()
-                else
-                    movementAlgorithm("ABOVE", "RIGHT", value)
-                    if (movesAreSafe(false, stateSnapshot, value) and blankPosition.col + 1 <= #desiredState) then
-                        commitMoves()
-                    else
-                        revertState(stateSnapshot)
-                        print("Trying to revese return direction to get move safety")
-                        movementAlgorithm("ABOVE", "RIGHT", value)
-                    end
-                end
-                currentTilePosition = FindValueInState(currentState, value)
-                desiredTilePosition = FindValueInState(desiredState, value)
-                desiredTilePosition.col = desiredTilePosition.col + colModifier
-                desiredTilePosition.row = desiredTilePosition.row + rowModifier
-            end
-        end
-        if (delta.deltaRow < 0) then
-            moveBlankRelativeToValueX(value, 0, -1)
-            -- break
-            while (currentTilePosition.row ~= desiredTilePosition.row or currentTilePosition.col ~= desiredTilePosition.col) do
-                print("NEW LOOP: ", currentTilePosition.col, " ", currentTilePosition.row)
-                prettyPrint(currentState)
-                delta = { deltaCol = desiredTilePosition.col - currentTilePosition.col, deltaRow = desiredTilePosition.row - currentTilePosition.row }
-                stateSnapshot = deepCopy(currentState)
-                if (delta.deltaRow == 0) then
-                    print("No row movement needed")
-                    break
-                elseif (delta.deltaRow == -1) then
-                    moveBlankDown()
-                else
-                    movementAlgorithm("RIGHT", "UP", value)
-                    if (movesAreSafe(false, stateSnapshot, value)) then
-                        commitMoves()
-                    else
-                        revertState(stateSnapshot)
-                        print("Trying to revese return direction to get move safety")
-                        movementAlgorithm("LEFT", "UP", value)
-                    end
-                end
-                currentTilePosition = FindValueInState(currentState, value)
-                desiredTilePosition = FindValueInState(desiredState, value)
-                desiredTilePosition.col = desiredTilePosition.col + colModifier
-                desiredTilePosition.row = desiredTilePosition.row + rowModifier
-            end
-        end
-        if (delta.deltaRow > 0) then
-            moveBlankRelativeToValueX(value, 0, 1)
-            -- break
-            while (currentTilePosition.row ~= desiredTilePosition.row or currentTilePosition.col ~= desiredTilePosition.col) do
-                print("NEW LOOP: ", currentTilePosition.col, " ", currentTilePosition.row)
-                prettyPrint(currentState)
-                delta = { deltaCol = desiredTilePosition.col - currentTilePosition.col, deltaRow = desiredTilePosition.row - currentTilePosition.row }
-                stateSnapshot = deepCopy(currentState)
-                if (delta.deltaRow == 0) then
-                    print("No row movement needed")
-                    break
-                elseif (delta.deltaRow == 1) then
-                    moveBlankUp()
-                else
-                    movementAlgorithm("RIGHT", "DOWN", value)
-                    if (movesAreSafe(false, stateSnapshot, value)) then
-                        commitMoves()
-                    else
-                        revertState(stateSnapshot)
-                        print("Trying to revese return direction to get move safety")
-                        movementAlgorithm("LEFT", "DOWN", value)
-                    end
-                end
-                currentTilePosition = FindValueInState(currentState, value)
-                desiredTilePosition = FindValueInState(desiredState, value)
-                desiredTilePosition.col = desiredTilePosition.col + colModifier
-                desiredTilePosition.row = desiredTilePosition.row + rowModifier
-            end
-        end
-        print("DONE")
     end
-    table.insert(LockedPositions, FindValueInState(currentState, value))
+    if (horizontalAdjustment == true) then
+        if (blankPosition.col == 4) then
+            blankPosition = moveBlankRight(currentState, blankPosition)
+        else
+            blankPosition = moveBlankLeft(currentState, blankPosition)
+        end
+    end
+
+    return currentState
 end
 
 local function calculateMoveSetToSolveTopRow()
@@ -542,13 +238,14 @@ local function calculateMoveSetToSolveTopRow()
     -- Is there space above?
     -- If yes, calculate the possible path and check if it runs into locked spaces
     -- If it does, try moving the opposite direction (if above, then below)
-
+        print("Solving...")
+        prettyPrint(currentState)
     -- solve 1
-    moveTileToDesiredPosition(1, 0, 0)
-    moveTileToDesiredPosition(2, 0, 0)
-    moveTileToDesiredPosition(3, 0, 0)
-    moveTileToDesiredPosition(4, 1, 0)
-    moveTileToDesiredPosition(5, 1, 0)
+    moveTileToDesiredPosition(1, currentState, desiredState)
+    -- moveTileToDesiredPosition(2, 0, 0)
+    -- moveTileToDesiredPosition(3, 0, 0)
+    -- moveTileToDesiredPosition(4, 1, 0)
+    -- moveTileToDesiredPosition(5, 1, 0)
 
 
 
@@ -587,7 +284,7 @@ local function calculateMoveSetToSolveTopRow()
     -- print("DONE WITH ONE")
 end
 
-calculateMoveSetToSolveTopRow()
-for index, move in ipairs(MOVES) do
-    print(move.direction)
-end
+-- calculateMoveSetToSolveTopRow()
+-- for index, move in ipairs(MOVES) do
+--     print(move.direction)
+-- end

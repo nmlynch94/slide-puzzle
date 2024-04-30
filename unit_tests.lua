@@ -1,10 +1,10 @@
 require("test")
 
 local currentState = {
-    {6, 0, 1, 4, 5},
+    {6, 20, 1, 4, 5},
     {2, 8, 3, 9, 10},
     {11, 7, 13, 14, 15},
-    {16, 12, 18, 19, 20},
+    {16, 12, 18, 19, 0},
     {21, 21, 22, 23, 24},
 }
 
@@ -22,9 +22,114 @@ if (testValue.row ~= 1 or testValue.col ~= 3) then
     print(testValue.row, ": ", testValue.col)
     error("Didn't work")
 end
+print("-----------------END-------------------")
 
 local testValue = FindValueInState(currentState, 13)
 if (testValue.row ~= 3 or testValue.col ~= 3) then
     print(testValue.row, ": ", testValue.col)
     error("Didn't work")
 end
+print("-----------------END-------------------")
+
+-- Try to move value that doesn't need moveBlankDown
+local value = MoveTileToDesiredPosition(4, currentState, desiredState)
+if (value ~= "No movement needed") then
+    print(value)
+    error("Didn't work")
+end
+print("-----------------END-------------------")
+
+-- Try to move blank position relative to several values to the left
+local state = MoveTileToDesiredPosition(1, currentState, desiredState)
+local blankPosition = FindValueInState(currentState, 0)
+if (blankPosition.col ~= 2) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
+
+-- Try to move blank position relative to values to the left and it needs a vertical adjustment to get there.
+local testState = {
+    {10, 20, 1, 4, 5},
+    {2, 8, 6, 9, 0},
+    {11, 7, 13, 14, 15},
+    {16, 12, 18, 19, 3},
+    {21, 21, 22, 23, 24},
+}
+local state = MoveTileToDesiredPosition(6, testState, desiredState)
+local blankPosition = FindValueInState(testState, 0)
+local targetPosition = FindValueInState(testState, 6)
+if ((blankPosition.col ~= 2 or blankPosition.row ~= 2) or (targetPosition.col ~= 3 or targetPosition.row ~= 2)) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
+
+print("Start test moving left with a necessary vertical adjustment down to avoid the target of 10")
+local testState = {
+    {8, 20, 1, 4, 5},
+    {2, 10, 6, 9, 0},
+    {11, 7, 13, 14, 15},
+    {16, 12, 18, 19, 3},
+    {21, 21, 22, 23, 24},
+}
+prettyPrint(testState)
+local state = MoveTileToDesiredPosition(10, testState, desiredState)
+local blankPosition = FindValueInState(testState, 0)
+local targetPosition = FindValueInState(testState, 10)
+if ((blankPosition.col ~= 3 or blankPosition.row ~= 2) or (targetPosition.col ~= 2 or targetPosition.row ~= 2)) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
+
+print("Start test moving left with a necessary vertical adjustment up to avoid the target of 22")
+local testState = {
+    {10, 20, 1, 4, 5},
+    {2, 8, 6, 9, 21},
+    {11, 7, 13, 14, 15},
+    {16, 12, 18, 19, 3},
+    {24, 21, 23, 22, 0},
+}
+local state = MoveTileToDesiredPosition(22, testState, desiredState)
+local blankPosition = FindValueInState(testState, 0)
+local targetPosition = FindValueInState(testState, 22)
+if ((blankPosition.col ~= 3 or blankPosition.row ~= 5) or (targetPosition.col ~= 4 or targetPosition.row ~= 5)) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
+
+print("Testing moving both left and up")
+local testState = {
+    {10, 20, 1, 4, 5},
+    {2, 8, 6, 9, 21},
+    {11, 7, 13, 14, 15},
+    {16, 12, 18, 19, 3},
+    {24, 21, 23, 22, 0},
+}
+local state = MoveTileToDesiredPosition(1, testState, desiredState)
+local blankPosition = FindValueInState(testState, 0)
+local targetPosition = FindValueInState(testState, 1)
+if ((blankPosition.col ~= 2 or blankPosition.row ~= 1) or (targetPosition.col ~= 3 or targetPosition.row ~= 1)) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
+
+print("Testing moving both left and down")
+local testState = {
+    {10, 20, 1, 4, 0},
+    {2, 8, 6, 9, 21},
+    {11, 7, 13, 14, 15},
+    {16, 12, 18, 19, 3},
+    {24, 21, 23, 22, 5},
+}
+local state = MoveTileToDesiredPosition(22, testState, desiredState)
+local blankPosition = FindValueInState(testState, 0)
+local targetPosition = FindValueInState(testState, 22)
+if ((blankPosition.col ~= 2 or blankPosition.row ~= 1) or (targetPosition.col ~= 3 or targetPosition.row ~= 1)) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
