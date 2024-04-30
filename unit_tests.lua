@@ -32,7 +32,7 @@ end
 print("-----------------END-------------------")
 
 -- Try to move value that doesn't need moveBlankDown
-local value = MoveTileToDesiredPosition(4, currentState, desiredState)
+local value = moveCol(4, currentState, desiredState, {})
 if (value ~= "No movement needed") then
     print(value)
     error("Didn't work")
@@ -40,7 +40,7 @@ end
 print("-----------------END-------------------")
 
 -- Try to move blank position relative to several values to the left
-local state = MoveTileToDesiredPosition(1, currentState, desiredState)
+local state = moveCol(1, currentState, desiredState, {})
 local blankPosition = FindValueInState(currentState, 0)
 if (blankPosition.col ~= 2) then
     error("Didn't work")
@@ -56,7 +56,7 @@ local testState = {
     {16, 12, 18, 19, 3},
     {21, 21, 22, 23, 24},
 }
-local state = MoveTileToDesiredPosition(6, testState, desiredState)
+local state = moveCol(6, testState, desiredState, {})
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 6)
 if ((blankPosition.col ~= 2 or blankPosition.row ~= 2) or (targetPosition.col ~= 3 or targetPosition.row ~= 2)) then
@@ -74,7 +74,7 @@ local testState = {
     {21, 21, 22, 23, 24},
 }
 prettyPrint(testState)
-local state = MoveTileToDesiredPosition(6, testState, desiredState)
+local state = moveCol(6, testState, desiredState, {})
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 6)
 if ((blankPosition.col ~= 2 or blankPosition.row ~= 2) or (targetPosition.col ~= 3 or targetPosition.row ~= 2)) then
@@ -91,7 +91,7 @@ local testState = {
     {16, 12, 18, 19, 3},
     {24, 21, 23, 22, 0},
 }
-local state = MoveTileToDesiredPosition(22, testState, desiredState)
+local state = moveCol(22, testState, desiredState, {})
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 22)
 if ((blankPosition.col ~= 3 or blankPosition.row ~= 5) or (targetPosition.col ~= 4 or targetPosition.row ~= 5)) then
@@ -108,7 +108,7 @@ local testState = {
     {16, 12, 18, 19, 3},
     {24, 21, 23, 22, 0},
 }
-local state = MoveTileToDesiredPosition(1, testState, desiredState)
+local state = moveCol(1, testState, desiredState, {})
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 1)
 if ((blankPosition.col ~= 2 or blankPosition.row ~= 1) or (targetPosition.col ~= 3 or targetPosition.row ~= 1)) then
@@ -125,7 +125,7 @@ local testState = {
     {16, 12, 18, 19, 3},
     {24, 21, 23, 22, 5},
 }
-local state = MoveTileToDesiredPosition(22, testState, desiredState)
+local state = moveCol(22, testState, desiredState, {})
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 22)
 if ((blankPosition.col ~= 3 or blankPosition.row ~= 5) or (targetPosition.col ~= 4 or targetPosition.row ~= 5)) then

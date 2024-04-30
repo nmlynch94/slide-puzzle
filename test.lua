@@ -108,7 +108,7 @@ local function moveBlankRelativeToPosition(targetValue, relativePositionXY)
     print("Target position is col: ", targetPosition.col, " row: ", targetPosition.row)
 end
 
-function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
+function moveCol(targetValue, currentState, desiredState, avoidRows)
     local desiredPositon = FindValueInState(desiredState, targetValue)
     local currentPositon = FindValueInState(currentState, targetValue)
     local blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
@@ -163,10 +163,6 @@ function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
     -- If we are in the same row as the target and we need to move past it, then we should move down one first
     -- Do the movement col
     local verticalAdjustment = false
-    prettyPrintPosition(currentPositon)
-    prettyPrintPosition(blankPosition)
-    print(isBlankToTheLeft)
-    print(needsToMoveLeft)
 
     if (blankPosition.row == currentPositon.row and ((not isBlankToTheLeft and needsToMoveLeft) or (isBlankToTheLeft and not needsToMoveLeft))) then
         verticalAdjustment = true
@@ -234,6 +230,10 @@ function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
     end
 
     return currentState
+end
+
+function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
+    moveCol(targetValue, currentState, desiredState)
 end
 
 local function calculateMoveSetToSolveTopRow()
