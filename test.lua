@@ -102,16 +102,31 @@ local function moveBlankDown(state, blankPosition)
     return blankPosition
 end
 
+function arrayHasValue(array, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+    return false
+end
+
 local function moveBlankRelativeToPosition(targetValue, relativePositionXY)
     local valuePosition = FindValueInState(currentState, targetValue)
     local targetPosition = {col = valuePosition.col + relativePositionXY.col, row = valuePosition.row + relativePositionXY.row}
     print("Target position is col: ", targetPosition.col, " row: ", targetPosition.row)
 end
 
-function moveCol(targetValue, currentState, desiredState, avoidRows)
+function moveCol(targetValue, currentState, desiredState, belowRow) -- below row is the place we should avoid with movement to avoid messing up existing value
     local desiredPositon = FindValueInState(desiredState, targetValue)
     local currentPositon = FindValueInState(currentState, targetValue)
     local blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
+
+    if (blankPosition.row <= belowRow) then
+        for i = 1, math.abs(blankPosition.row - belowRow) + 1, 1 do
+            blankPosition = moveBlankDown(currentState, blankPosition)
+        end
+    end
 
     -- if (blankPosition.row == 1) then
     --     blankPosition = moveBlankDown(currentState, blankPosition)
