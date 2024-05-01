@@ -1,22 +1,52 @@
-local BLANK_SPACE_VALUE = 0
+
+local BLANK_SPACE_VALUE = "00"
 local PUZZLE_WIDTH = 4
 local Moves = {}
 
 local currentState = {
-    {2, 222, 15, 55, 1},
-    {9, 19, 21, 17, 3},
-    {8, 6, 10, 24, 23},
-    {11, 12, 7, 4, 0},
-    {5, 20, 22, 14, 16},
+    {"14", "21", "23", "03", "11"},
+    {"10", "15", "16", "20", "08"},
+    {"18", "05", "22", "06", "01"},
+    {"07", "19", "12", "17", "02"},
+    {"09", "24", "04", "13", "00"},
 }
 
 local desiredState = {
-    {1, 2, 3, 4, 5},
+    {"01", "02", "03", "04", "05"},
+    {"06", "07", "08", "09", "10"},
+    {"11", "12", "13", "14", "15"},
+    {"16", "17", "18", "19", "20"},
+    {"21", "22", "23", "24", "00"},
+}
+
+local currentState3by3 = {
+    {"07", "03", "04"},
+    {"08", "06", "02"},
+    {"01", "05", "00"}
+}
+
+local desiredState3by3 = {
+    {"01", "02", "03"},
+    {"04", "05", "06"},
+    {"07", "08", "00"}
+}
+
+local currentState4by4 = {
+
+}
+
+local desiredState4by4 = {
+
+}
+
+local desiredState2 = {
+    {1, 2, 3, 4, 56},
     {6, 7, 8, 9, 10},
     {11, 12, 13, 14, 15},
     {16, 17, 18, 19, 20},
     {21, 22, 23, 24, 0},
 }
+
 
 local currentTargetPosition
 
@@ -62,9 +92,9 @@ function FindValueInState(state, value)
     end
 end
 
-local function moveBlankRight(state, blankPosition)
+local function moveBlankRight(state)
     print("RIGHT")
-    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    local blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
     state[blankPosition.row][blankPosition.col] = state[blankPosition.row][blankPosition.col + 1]
     state[blankPosition.row][blankPosition.col + 1] = BLANK_SPACE_VALUE
     blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
@@ -72,9 +102,9 @@ local function moveBlankRight(state, blankPosition)
     return blankPosition
 end
 
-local function moveBlankLeft(state, blankPosition)
+local function moveBlankLeft(state)
     print("LEFT")
-    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    local blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
     state[blankPosition.row][blankPosition.col] = state[blankPosition.row][blankPosition.col - 1]
     state[blankPosition.row][blankPosition.col - 1] = BLANK_SPACE_VALUE
     blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
@@ -82,232 +112,210 @@ local function moveBlankLeft(state, blankPosition)
     return blankPosition
 end
 
-local function moveBlankUp(state, blankPosition)
+local function moveBlankUp(state)
     print("UP")
-    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    local blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
     state[blankPosition.row][blankPosition.col] = state[blankPosition.row - 1][blankPosition.col]
     state[blankPosition.row - 1][blankPosition.col] = BLANK_SPACE_VALUE
     blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
     prettyPrint(state)
-    return blankPosition
 end
 
-local function moveBlankDown(state, blankPosition)
+local function moveBlankDown(state)
     print("DOWN")
-    blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+    local blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
     state[blankPosition.row][blankPosition.col] = state[blankPosition.row + 1][blankPosition.col]
     state[blankPosition.row + 1][blankPosition.col] = BLANK_SPACE_VALUE
     blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
     prettyPrint(state)
-    return blankPosition
 end
 
-function arrayHasValue(array, val)
-    for index, value in ipairs(tab) do
-        if value == val then
+local lockedStates = {}
+
+function isLocked(state)
+    for index, lockedState in pairs(lockedStates) do
+        if doStatesMatch(state, lockedState, nil) then
+            print("STATE IS LOCKED")
+            prettyPrint(state)
+            prettyPrint(lockedState)
             return true
         end
     end
     return false
 end
 
-local function moveBlankRelativeToPosition(targetValue, relativePositionXY)
-    local valuePosition = FindValueInState(currentState, targetValue)
-    local targetPosition = {col = valuePosition.col + relativePositionXY.col, row = valuePosition.row + relativePositionXY.row}
-    print("Target position is col: ", targetPosition.col, " row: ", targetPosition.row)
-end
-
-function moveCol(targetValue, currentState, desiredState, belowRow) -- below row is the place we should avoid with movement to avoid messing up existing value
-    local desiredPositon = FindValueInState(desiredState, targetValue)
-    local currentPositon = FindValueInState(currentState, targetValue)
-    local blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-            
-    if (blankPosition.row <= belowRow) then
-        print("AVOIDING ROW: ", belowRow)
-        for i = 1, math.abs(blankPosition.row - belowRow) + 1, 1 do
-            print("AVOIDING")
-            blankPosition = moveBlankDown(currentState, blankPosition)
-        end
-    end
-
-    prettyPrint(currentState)
-
-    if (desiredPositon.col == currentPositon.col and desiredPositon.row == currentPositon.row) then
-        print("No movement needed. Target tile ", targetValue, " is in position")
-        return "No movement needed"
-    end
-
-    -- Do we need to move left or right
-    local needsToMoveLeft = false
-    if (desiredPositon.col < currentPositon.col) then
-        needsToMoveLeft = true
-    end
-    
-    local needsToMoveDown = false
-    if (desiredPositon.row > currentPositon.row) then
-        needsToMoveDown = true
-    end
-
-    -- If the target needs to move left, we want to place the blank space to the left before we move
-    local targetBlankStartingPositon = {}
-    if (needsToMoveLeft == true) then
-        targetBlankStartingPositon = {col = currentPositon.col - 1, row = currentPositon.row}
-    else
-        targetBlankStartingPositon = {col = currentPositon.col + 1, row = currentPositon.row}
-    end
-
-    -- Is the blank space to the left or to the right
-    local isBlankToTheLeft = false
-    if (blankPosition.col < targetBlankStartingPositon.col) then
-        isBlankToTheLeft = true
-    end
-
-    -- Is the blank space above or below
-    local isBlankAbove = false
-    if (blankPosition.row < targetBlankStartingPositon.row) then
-        isBlankAbove = true
-    end
-
-    -- We need to move left
-
-    -- If we are in the same row as the target and we need to move past it, then we should move down one first
-    -- Do the movement col
-    local verticalAdjustment = false
-
-    if (blankPosition.row == currentPositon.row and ((not isBlankToTheLeft and needsToMoveLeft) or (isBlankToTheLeft and not needsToMoveLeft))) then
-        print("Needs vertical adjustment")
-        verticalAdjustment = true
-    end
-    if (verticalAdjustment == true) then
-        if (blankPosition.row == 5) then
-            print("We are in the last row. Adjust up one to avoid hitting the target")
-            blankPosition = moveBlankUp(currentState, blankPosition)
-        else 
-            blankPosition = moveBlankDown(currentState, blankPosition)
-        end
-    end
-    if (blankPosition.col ~= currentPositon.col) then
-        if (needsToMoveLeft == true) then
-            print("We need to move left. Moving...")
-            for i = 0, math.abs(blankPosition.col - currentPositon.col), 1 do
-                blankPosition = moveBlankLeft(currentState, blankPosition)
+function doStatesMatch(stateA, stateB, rowLimiter)
+    if rowLimiter ~= nil then
+        for i = 1, rowLimiter do
+            for col, colData in pairs(stateA[i]) do
+                if (colData ~= stateB[i][col]) then
+                    return false
+                end
             end
-        else
-            print("We need to move right. Moving...")
-            for i = 0, math.abs(blankPosition.col - currentPositon.col), 1 do
-                blankPosition = moveBlankRight(currentState, blankPosition)
+        end
+        return true
+    end
+
+    for row, rowData in pairs(stateA) do
+        for col, colData in pairs(rowData) do
+            if (colData ~= stateB[row][col]) then
+                return false
             end
         end
     end
-    if (verticalAdjustment == true) then
-        if (blankPosition.row == 4) then
-            blankPosition = moveBlankDown(currentState, blankPosition)
-        else
-            blankPosition = moveBlankUp(currentState, blankPosition)
+    return true
+end
+
+local function calculateManhattanDistance(currentState, goalState)
+    local distance = 0
+    local goalPos = {}
+
+    -- First, map each tile to its goal position from the goalState
+    for row = 1, #goalState do
+        for col = 1, #goalState[row] do
+            goalPos[goalState[row][col]] = {row = row, col = col}
         end
     end
 
-    -- If we are in the same row as the target and we need to move past it, then we should move down one first
-    -- Do the movement row
-    local horizontalAdjustment = false
-    if (blankPosition.col == currentPositon.col and ((isBlankAbove and needsToMoveDown) or (not isBlankAbove and not needsToMoveDown))) then
-        print("Needs horizontal adjustment")
-        horizontalAdjustment = true
-    end
-
-    if (horizontalAdjustment == true) then
-        if (blankPosition.col == 5) then
-            print("We are in the last col. Adjust left one to avoid hitting the target")
-            blankPosition = moveBlankLeft(currentState, blankPosition)
-        else 
-            blankPosition = moveBlankRight(currentState, blankPosition)
-        end
-    end
-    if (blankPosition.row ~= currentPositon.row) then
-        if (not isBlankAbove) then
-            for i = 1, math.abs(blankPosition.row - currentPositon.row), 1 do
-                blankPosition = moveBlankUp(currentState, blankPosition)
-            end
-        else
-            for i = 1, math.abs(blankPosition.row - currentPositon.row), 1 do
-                blankPosition = moveBlankDown(currentState, blankPosition)
+    -- Now, calculate the Manhattan Distance for each tile in the currentState
+    for row = 1, #currentState do
+        for col = 1, #currentState[row] do
+            local tile = currentState[row][col]
+            if tile ~= "00" then -- Ignore the blank space
+                local goalRow = goalPos[tile].row
+                local goalCol = goalPos[tile].col
+                distance = distance + math.abs(row - goalRow) + math.abs(col - goalCol)
             end
         end
     end
-    if (horizontalAdjustment == true) then
-        if (blankPosition.col == 4) then
-            blankPosition = moveBlankRight(currentState, blankPosition)
-        else
-            blankPosition = moveBlankLeft(currentState, blankPosition)
+
+    return distance
+end
+
+
+local statePairs = {}
+local counter = 0
+local currentStateToSolve = currentState3by3
+local currentDesiredState = desiredState3by3
+
+local threshhold = calculateManhattanDistance(currentStateToSolve, currentDesiredState)
+function doIt(state)
+
+    print("TOTAL PERMUTATIONS: ", #statePairs)
+    print("LOCKED STATES: ", #lockedStates)
+    local newStates = {}
+    local blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
+
+    if doStatesMatch(state, currentDesiredState, 1) then
+        prettyPrint("MATCH")
+        prettyPrint(state)
+    end
+
+    if blankPosition.row < #state then
+        local downState = deepCopy(state)
+        moveBlankDown(downState)
+        if not isLocked(downState) then
+            table.insert(lockedStates, downState)
+            table.insert(newStates, {parent = state ,state = downState, heuristic = calculateManhattanDistance(downState, currentDesiredState)})
         end
     end
 
-    return currentState
+    if blankPosition.row > 1 then
+        local upState = deepCopy(state)
+        moveBlankUp(upState)
+        if not isLocked(upState) then
+            table.insert(lockedStates, upState)
+            table.insert(newStates, {parent = state, state = upState, heuristic = calculateManhattanDistance(upState, currentDesiredState)})
+        end
+    end
+
+    if blankPosition.col > 1 then
+        local leftState = deepCopy(state)
+        moveBlankLeft(leftState)
+        if not isLocked(leftState) then
+            table.insert(lockedStates, leftState)
+            table.insert(newStates, {parent = state, state = leftState, heuristic = calculateManhattanDistance(leftState, currentDesiredState)})
+        end
+    end
+
+    if blankPosition.col < #state then
+        local rightState = deepCopy(state)
+        moveBlankRight(rightState)
+        if not isLocked(rightState) then
+            table.insert(lockedStates, rightState)
+            table.insert(newStates, {parent = state, state = rightState, heuristic = calculateManhattanDistance(rightState, currentDesiredState)})
+        end
+    end
+
+    local unlockedStatesUnderThreshhold = 0
+
+    table.sort(newStates, function(a, b)
+        return a.heuristic > b.heuristic
+    end)
+
+    if #newStates == 0 then
+        error("out of states")
+    end
+
+    -- Raise threshhold if none are below
+    if newStates[1].heuristic > threshhold then
+        threshhold = newStates[1].heuristic
+    end
+
+    for index, state in pairs(newStates) do
+        if state.heuristic <= threshhold then
+            unlockedStatesUnderThreshhold = unlockedStatesUnderThreshhold + 1
+            table.insert(statePairs, state)
+        end
+    end
 end
 
-function MoveTileToDesiredPosition(targetValue, currentState, desiredState)
-    moveCol(targetValue, currentState, desiredState)
+local state = deepCopy(currentState3by3)
+table.insert(lockedStates, state)
+-- for i = 1, 2 do
+doIt(state)
+-- end
+
+
+local function formatArray(array)
+    local lines = {}
+    for i, row in ipairs(array) do
+        local formattedRow = {}
+        for j, value in ipairs(row) do
+            -- Formatting the number to two digits, note 222 will remain as 222
+            table.insert(formattedRow, string.format("%02d", value))
+        end
+        -- Concatenating formatted numbers with commas and adding braces
+        table.insert(lines, "{" .. table.concat(formattedRow, ", ") .. "}")
+    end
+    -- Joining all rows with newline
+    return table.concat(lines, ",\\n")
 end
 
-local function calculateMoveSetToSolveTopRow()
-    -- solve 1
-    local solve_target = 1
-    -- move the blank space adjacent to the block we want to move. It should be to the direction of whichever way to want to move it.
-    -- for example, if we want to move the tile "1" to the left, then we need to place the blank on the left of it.
-    -- rules when getting blank into position:
-    -- 1. Do not pass existing 'locked' positions. Will need a temporarily exception for the final position in a row/column
-    -- 2. Do not pass through the tile you are trying to move
-    -- example:
-    -- Is there space above?
-    -- If yes, calculate the possible path and check if it runs into locked spaces
-    -- If it does, try moving the opposite direction (if above, then below)
-        print("Solving...")
-        prettyPrint(currentState)
-    -- solve 1
-    moveTileToDesiredPosition(1, currentState, desiredState)
-    -- moveTileToDesiredPosition(2, 0, 0)
-    -- moveTileToDesiredPosition(3, 0, 0)
-    -- moveTileToDesiredPosition(4, 1, 0)
-    -- moveTileToDesiredPosition(5, 1, 0)
-
-
-
-    -- while (FindValueInState(currentState, solve_target).col ~= FindValueInState(desiredState, solve_target).col) do
-    --     local onePosition = FindValueInState(currentState, solve_target)
-    --     local desiredOnePosition = FindValueInState(desiredState, solve_target)
-
-    --     local diffX = (desiredOnePosition.col - onePosition.col)
-    --     local diffY = (desiredOnePosition.row - onePosition.row)
-
-    --     print(solve_target, " needs to move x: ", diffX, " y: ", diffY)
-    --     print("Calulating move set for row")
-    --     if (diffX == 0) then
-    --         print("No moves needed for x")
-    --     else
-    --         moveX(diffX, onePosition, currentState)
-    --     end
-    -- end
-
-    -- -- for i = 1, 2 do
-    -- while (FindValueInState(currentState, solve_target).row ~= FindValueInState(desiredState, solve_target).row) do
-    --     local onePosition = FindValueInState(currentState, solve_target)
-    --     local desiredOnePosition = FindValueInState(desiredState, solve_target)
-
-    --     local diffX = (desiredOnePosition.col - onePosition.col)
-    --     local diffY = (desiredOnePosition.row - onePosition.row)
-
-    --     print(solve_target, " needs to move x: ", diffX, " y: ", diffY)
-    --     print("Calulating move set for row")
-    --     if (diffY == 0) then
-    --         print("No moves needed for y")
-    --     else
-    --         moveY(diffY, onePosition, currentState)
-    --     end
-    -- end
-    -- print("DONE WITH ONE")
+local fileName = "output.txt"
+local file = io.open(fileName, "a")
+if file then
+    for index, data in pairs(statePairs) do
+        local formattedStateA = formatArray(data.parent)
+        local formattedStateB = formatArray(data.state)
+        file:write("\"", formattedStateA, "\" -> \"", formattedStateB, "\"", "\n")
+    end
+    file:close()
+    print("Data has been written to " .. fileName)
+else
+    print("Failed to open the file.")
 end
 
--- calculateMoveSetToSolveTopRow()
--- for index, move in ipairs(MOVES) do
---     print(move.direction)
+-- Calling the formatArray function and storing the result
+-- local formattedString = formatArray(currentState)
+-- local desiredStateFormattedString = formatArray(desiredState)
+
+-- local fileName = "output.txt"
+-- local file = io.open(fileName, "w")
+-- if file then
+--     file:write("\"", formattedString, "\" -> \"", desiredStateFormattedString, "\"")
+--     file:close()
+--     print("Data has been written to " .. fileName)
+-- else
+--     print("Failed to open the file.")
 -- end
