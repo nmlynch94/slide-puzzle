@@ -130,20 +130,6 @@ local function moveBlankDown(state)
     prettyPrint(state)
 end
 
-local lockedStates = {}
-
-function isLocked(state)
-    for index, lockedState in pairs(lockedStates) do
-        if doStatesMatch(state, lockedState, nil) then
-            print("STATE IS LOCKED")
-            prettyPrint(state)
-            prettyPrint(lockedState)
-            return true
-        end
-    end
-    return false
-end
-
 function doStatesMatch(stateA, stateB, rowLimiter)
     if rowLimiter ~= nil then
         for i = 1, rowLimiter do
@@ -198,79 +184,111 @@ local counter = 0
 local currentStateToSolve = currentState3by3
 local currentDesiredState = desiredState3by3
 
+local lockedStates = {}
+
+function isLocked(state, threshhold)
+    for index, lockedState in pairs(lockedStates) do
+        if doStatesMatch(state, lockedState, nil) and calculateManhattanDistance(state, currentDesiredState) <= threshhold then
+            print("STATE IS LOCKED")
+            prettyPrint(state)
+            prettyPrint(lockedState)
+            return true
+        end
+    end
+    return false
+end
+
 local threshhold = calculateManhattanDistance(currentStateToSolve, currentDesiredState)
 function doIt(state)
 
     print("TOTAL PERMUTATIONS: ", #statePairs)
     print("LOCKED STATES: ", #lockedStates)
+    print("Heuristic: ", calculateManhattanDistance(state, currentDesiredState))
     local newStates = {}
     local blankPosition = FindValueInState(state, BLANK_SPACE_VALUE)
 
-    if doStatesMatch(state, currentDesiredState, 1) then
-        prettyPrint("MATCH")
+    if doStatesMatch(state, currentDesiredState, nil) then
+        print("MATCH")
         prettyPrint(state)
+        error("MAAAAATCH")
     end
 
     if blankPosition.row < #state then
         local downState = deepCopy(state)
         moveBlankDown(downState)
-        if not isLocked(downState) then
-            table.insert(lockedStates, downState)
-            table.insert(newStates, {parent = state ,state = downState, heuristic = calculateManhattanDistance(downState, currentDesiredState)})
+        if not isLocked(downState, threshhold) then
+            table.insert(newStates, {parent = state ,state = downState, heuristic = calculateManhattanDistance(downState, currentDesiredState), direction = "DOWN"})
         end
     end
 
     if blankPosition.row > 1 then
         local upState = deepCopy(state)
         moveBlankUp(upState)
-        if not isLocked(upState) then
-            table.insert(lockedStates, upState)
-            table.insert(newStates, {parent = state, state = upState, heuristic = calculateManhattanDistance(upState, currentDesiredState)})
+        if not isLocked(upState, threshhold) then
+            table.insert(newStates, {parent = state, state = upState, heuristic = calculateManhattanDistance(upState, currentDesiredState), direction = "UP"})
         end
     end
 
     if blankPosition.col > 1 then
         local leftState = deepCopy(state)
         moveBlankLeft(leftState)
-        if not isLocked(leftState) then
-            table.insert(lockedStates, leftState)
-            table.insert(newStates, {parent = state, state = leftState, heuristic = calculateManhattanDistance(leftState, currentDesiredState)})
+        if not isLocked(leftState, threshhold) then
+            table.insert(newStates, {parent = state, state = leftState, heuristic = calculateManhattanDistance(leftState, currentDesiredState), direction = "LEFT"})
         end
     end
 
     if blankPosition.col < #state then
         local rightState = deepCopy(state)
         moveBlankRight(rightState)
-        if not isLocked(rightState) then
-            table.insert(lockedStates, rightState)
-            table.insert(newStates, {parent = state, state = rightState, heuristic = calculateManhattanDistance(rightState, currentDesiredState)})
+        if not isLocked(rightState, threshhold) then
+            table.insert(newStates, {parent = state, state = rightState, heuristic = calculateManhattanDistance(rightState, currentDesiredState), direction = "RIGHT"})
         end
     end
 
     local unlockedStatesUnderThreshhold = 0
 
     table.sort(newStates, function(a, b)
-        return a.heuristic > b.heuristic
+        return a.heuristic < b.heuristic
     end)
-
-    if #newStates == 0 then
-        error("out of states")
+    
+    for index, state in pairs(newStates) do
+        print(state.heuristic)
     end
 
-    -- Raise threshhold if none are below
+    if #newStates == 0 then
+        print("Out of states for this round")
+        return
+    end
+
+    -- Raise threshhold if the lowest isn't under the current one
     if newStates[1].heuristic > threshhold then
-        threshhold = newStates[1].heuristic
+        print("None found with heuristic ", threshhold, " raising to ", newStates[#newStates].heuristic)
+        local newThreshhold = newStates[#newStates].heuristic
+        
+        -- Add back any locked states that are less than the new threshold, but above the old threshold
+        for index, state in pairs(lockedStates) do
+            local manhattan = calculateManhattanDistance(state, currentDesiredState)
+            if (manhattan > threshhold and manhattan <= newThreshhold) then
+                print("INSERTING LOCKED STATE: ", manhattan)
+                table.insert(newStates, state)
+                table.remove(lockedStates, index)
+            end
+        end
+        threshhold = newStates[#newStates].heuristic
+
     end
 
     for index, state in pairs(newStates) do
         if state.heuristic <= threshhold then
             unlockedStatesUnderThreshhold = unlockedStatesUnderThreshhold + 1
             table.insert(statePairs, state)
+            table.insert(lockedStates, state.state)
+            doIt(state.state)
         end
     end
 end
 
-local state = deepCopy(currentState3by3)
+local state = deepCopy(currentStateToSolve)
 table.insert(lockedStates, state)
 -- for i = 1, 2 do
 doIt(state)
@@ -305,17 +323,3 @@ if file then
 else
     print("Failed to open the file.")
 end
-
--- Calling the formatArray function and storing the result
--- local formattedString = formatArray(currentState)
--- local desiredStateFormattedString = formatArray(desiredState)
-
--- local fileName = "output.txt"
--- local file = io.open(fileName, "w")
--- if file then
---     file:write("\"", formattedString, "\" -> \"", desiredStateFormattedString, "\"")
---     file:close()
---     print("Data has been written to " .. fileName)
--- else
---     print("Failed to open the file.")
--- end
