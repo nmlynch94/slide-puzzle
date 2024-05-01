@@ -121,19 +121,14 @@ function moveCol(targetValue, currentState, desiredState, belowRow) -- below row
     local desiredPositon = FindValueInState(desiredState, targetValue)
     local currentPositon = FindValueInState(currentState, targetValue)
     local blankPosition = FindValueInState(currentState, BLANK_SPACE_VALUE)
-
+            
     if (blankPosition.row <= belowRow) then
+        print("AVOIDING ROW: ", belowRow)
         for i = 1, math.abs(blankPosition.row - belowRow) + 1, 1 do
+            print("AVOIDING")
             blankPosition = moveBlankDown(currentState, blankPosition)
         end
     end
-
-    -- if (blankPosition.row == 1) then
-    --     blankPosition = moveBlankDown(currentState, blankPosition)
-    --     blankPosition = moveBlankDown(currentState, blankPosition)
-    -- end
-    -- currentPositon = FindValueInState(currentState, targetValue)
-
 
     prettyPrint(currentState)
 
@@ -180,10 +175,12 @@ function moveCol(targetValue, currentState, desiredState, belowRow) -- below row
     local verticalAdjustment = false
 
     if (blankPosition.row == currentPositon.row and ((not isBlankToTheLeft and needsToMoveLeft) or (isBlankToTheLeft and not needsToMoveLeft))) then
+        print("Needs vertical adjustment")
         verticalAdjustment = true
     end
     print(verticalAdjustment)
-
+    prettyPrintPosition(currentPositon)
+    prettyPrintPosition(blankPosition)
     if (verticalAdjustment == true) then
         print(blankPosition.row)
         if (blankPosition.row == 5) then
@@ -215,6 +212,7 @@ function moveCol(targetValue, currentState, desiredState, belowRow) -- below row
     -- Do the movement row
     local horizontalAdjustment = false
     if (blankPosition.col == currentPositon.col and ((isBlankAbove and needsToMoveDown) or (not isBlankAbove and not needsToMoveDown))) then
+        print("Needs horizontal adjustment")
         horizontalAdjustment = true
     end
 

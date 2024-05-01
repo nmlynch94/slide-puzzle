@@ -125,9 +125,26 @@ local testState = {
     {16, 12, 18, 19, 3},
     {24, 21, 23, 22, 5},
 }
-local state = moveCol(22, testState, desiredState, 0)
+local state = moveCol(22, testState, desiredState, 2)
 local blankPosition = FindValueInState(testState, 0)
 local targetPosition = FindValueInState(testState, 22)
+if ((blankPosition.col ~= 3 or blankPosition.row ~= 5) or (targetPosition.col ~= 4 or targetPosition.row ~= 5)) then
+    error("Didn't work")
+end
+prettyPrint(state)
+print("-----------------END-------------------")
+
+print("Testing moving around to the right")
+local testState = {
+    {1, 20, 1, 4, 3},
+    {0, 2, 6, 9, 21},
+    {11, 7, 13, 14, 15},
+    {16, 12, 18, 19, 3},
+    {24, 21, 23, 22, 5},
+}
+local state = moveCol(2, testState, desiredState, 0)
+local blankPosition = FindValueInState(testState, 0)
+local targetPosition = FindValueInState(testState, 2)
 if ((blankPosition.col ~= 3 or blankPosition.row ~= 5) or (targetPosition.col ~= 4 or targetPosition.row ~= 5)) then
     error("Didn't work")
 end
