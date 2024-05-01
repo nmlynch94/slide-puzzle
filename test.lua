@@ -178,12 +178,9 @@ function moveCol(targetValue, currentState, desiredState, belowRow) -- below row
         print("Needs vertical adjustment")
         verticalAdjustment = true
     end
-    print(verticalAdjustment)
-    prettyPrintPosition(currentPositon)
-    prettyPrintPosition(blankPosition)
     if (verticalAdjustment == true) then
-        print(blankPosition.row)
         if (blankPosition.row == 5) then
+            print("We are in the last row. Adjust up one to avoid hitting the target")
             blankPosition = moveBlankUp(currentState, blankPosition)
         else 
             blankPosition = moveBlankDown(currentState, blankPosition)
@@ -191,12 +188,14 @@ function moveCol(targetValue, currentState, desiredState, belowRow) -- below row
     end
     if (blankPosition.col ~= currentPositon.col) then
         if (needsToMoveLeft == true) then
+            print("We need to move left. Moving...")
             for i = 0, math.abs(blankPosition.col - currentPositon.col), 1 do
                 blankPosition = moveBlankLeft(currentState, blankPosition)
             end
         else
-            for i = 0, math.abs(blankPosition.col - currentPositon.col - 1), 1 do
-                blankPosition = moveBlankLeft(currentState, blankPosition)
+            print("We need to move right. Moving...")
+            for i = 0, math.abs(blankPosition.col - currentPositon.col), 1 do
+                blankPosition = moveBlankRight(currentState, blankPosition)
             end
         end
     end
@@ -218,6 +217,7 @@ function moveCol(targetValue, currentState, desiredState, belowRow) -- below row
 
     if (horizontalAdjustment == true) then
         if (blankPosition.col == 5) then
+            print("We are in the last col. Adjust left one to avoid hitting the target")
             blankPosition = moveBlankLeft(currentState, blankPosition)
         else 
             blankPosition = moveBlankRight(currentState, blankPosition)
