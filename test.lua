@@ -209,8 +209,9 @@ end
 
 local function search(path, g, bound, dirs)
     local cur = path[#path]
-    local f = g + h(cur)
-    print(f, cur:serialize())
+    local h = h(cur)
+    local f = g + h
+    print("g: ", g, " h: ", h, "bound: ", bound, cur:serialize(), "--", winningPuzzleString)
 
     if f > bound then
         return f
