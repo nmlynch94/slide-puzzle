@@ -1,13 +1,31 @@
 math.randomseed(os.time())
 
-DIRECTIONS = {
-    UP = {-1,0},
-    DOWN = {1,0},
-    LEFT = {0,-1},
-    RIGHT = {0,1}
-}
+INF = 100000
+
+UP = {-1,0, "UP"}
+DOWN = {1,0, "DOWN"}
+LEFT = {0,-1 ,"LEFT"}
+RIGHT = {0,1, "RIGHT"}
+
+DIRECTIONS = {UP, DOWN, LEFT, RIGHT}
 
 local Puzzle = {}
+local winningPuzzleString
+
+function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
 
 function Puzzle:new(boardSize, initialState)
     local instance = {}
@@ -15,19 +33,33 @@ function Puzzle:new(boardSize, initialState)
 
     instance.boardSize = boardSize or 3
     instance.board = {}
-    instance.blankPos = {instance.boardSize, instance.boardSize}
+    instance.blankPos = {boardSize, boardSize}
 
     if initialState == nil then
-        for y = 1, instance.boardSize do
+        for y = 1, boardSize do
             table.insert(instance.board, {})
-            for x = 1, instance.boardSize do
+            for x = 1, boardSize do
                 instance.board[y][x] = x + (y-1) * boardSize
             end
         end
         instance.board[boardSize][boardSize] = 0
+    else
+        instance.board = initialState
+    end
+
+    -- Reverse index to make finding desired position by value easier in the heuristic check
+    instance.goals = {}
+    for iy, row in ipairs(instance.board) do
+        for ix, col in pairs(row) do
+            instance.goals[col] = {x = ix, y = iy}
+        end
     end
     
     return instance
+end
+
+function Puzzle:getGoals()
+    return self.goals
 end
 
 function Puzzle:getBoardSize() 
@@ -41,11 +73,21 @@ function Puzzle:serialize()
             table.insert(stateArray, self.board[y][x])
         end
     end
-    return table.concat(stateArray, ", ")
+    return table.concat(stateArray, "-")
 end
 
 function Puzzle:getTile(x, y)
     return self.board[y][x]
+end
+
+function Puzzle:getPosition(value)
+    for iy, row in ipairs(self.board) do
+        for ix, col in pairs(row) do
+            if col == value then
+                return {x = ix, y = iy}
+            end
+        end
+    end
 end
 
 function Puzzle:shuffle()
@@ -59,7 +101,7 @@ end
 
 function Puzzle:move(direction)
     local newBlankPosition = {self.blankPos[1] + direction[1], self.blankPos[2] + direction[2]}
-    if newBlankPosition[1] < 1 or newBlankPosition[2] > self.boardSize then
+    if newBlankPosition[1] < 1 or newBlankPosition[2] > self.boardSize or newBlankPosition[1] > self.boardSize or newBlankPosition[2] < 1 then
         return false
     end
 
@@ -70,9 +112,47 @@ function Puzzle:move(direction)
 end
 
 function Puzzle:checkWin()
-    local solvedPuzzle = Puzzle:new(self.boardSize)
-    local checkSum = solvedPuzzle:serialize()
-    return checkSum == self.serialize(self)
+    return winningPuzzleString == self.serialize(self)
+end
+
+function Puzzle:getHeuristic()
+    local h = 0
+    local valuesInTargetRows = {}
+    local valuesInTargetCols = {}
+
+    for iy, row in ipairs(self.board) do
+        for ix, col in ipairs(row) do
+            local desiredPosition = self.goals[col]
+            local currentPosition = {x = ix, y = iy}
+            if desiredPosition and currentPosition then
+                if desiredPosition.y == currentPosition.y then
+                    table.insert(valuesInTargetRows, {currentPosition = currentPosition, desiredPosition = desiredPosition})
+                end
+                if desiredPosition.x == currentPosition.x then
+                    table.insert(valuesInTargetCols, {currentPosition = currentPosition, desiredPosition = desiredPosition})
+                end
+                h = h + math.abs(desiredPosition.x - currentPosition.x) + math.abs(desiredPosition.y - currentPosition.y)
+            end
+        end
+    end
+
+    for index, item in ipairs(valuesInTargetRows) do
+        for index2, item2 in ipairs(valuesInTargetRows) do
+            if index ~= index2 and item.desiredPosition.x < item2.desiredPosition.x and item.currentPosition.x > item2.currentPosition.x then
+                h = h + 2
+            end
+        end
+    end
+
+    for index, item in ipairs(valuesInTargetCols) do
+        for index2, item2 in ipairs(valuesInTargetCols) do
+            if index ~= index2 and item.desiredPosition.y < item2.desiredPosition.y and item.currentPosition.y > item2.currentPosition.y then
+                h = h + 2
+            end
+        end
+    end
+
+    return h
 end
 
 function Puzzle:hash(group)
@@ -108,119 +188,95 @@ function Puzzle:hash(group)
 
     return table.concat(cleanHashString)
 end
-
-function factorial(n)
-    if n == 0 then return 1 end
-    return n * factorial(n - 1)
+local function h(puzzle)
+    return puzzle:getHeuristic()
 end
 
-function permutations(n, k)
-    return factorial(n) / factorial(n - k)
-end
-
-function buildPatternDb(boardSize, group, groupNum)
-    local puzzle = Puzzle:new(boardSize)
-    puzzle.count = 0
-
-    local groupWithBlank = {}
-    for _, v in ipairs(group) do
-        groupWithBlank[v] = true
+local function isPuzzleInPath(puzzle, path)
+    for index, priorPuzzle in pairs(path) do
+        if priorPuzzle:serialize() == puzzle:serialize() then
+            return true
+        end
     end
-    groupWithBlank[0] = true -- Adding blank
+    return false
+end
 
-    local visited = {}
-    local closedList = {}
-    local openList = {}
-    local iter = 0
-    local totIter = permutations(boardSize * boardSize, #groupWithBlank)
-    local t1 = os.clock()
+function Puzzle:simulateMove(dir)
+    local simPuzzle = deepcopy(self)
+    local moveSuccessful = simPuzzle:move(dir)
+    return moveSuccessful, simPuzzle
+end
 
-    table.insert(openList, {puzzle, {0, 0}})
+local function search(path, g, bound, dirs)
+    local cur = path[#path]
+    local f = g + h(cur)
+    print(f, cur:serialize())
 
-    while #openList > 0 do
-        local curEntry = table.remove(openList, 1) -- Dequeue
-        local cur, prevMove = curEntry[1], curEntry[2]
+    if f > bound then
+        return f
+    end
 
-        if not visitNode(cur, visited, closedList, groupWithBlank, group) then
+    if cur:checkWin() then
+        return true
+    end
+    local min = INF
+
+    for i, dir in ipairs(DIRECTIONS) do
+        if #dirs > 0 and -dir[1] == dirs[#dirs][1] and -dirs[#dirs][2] == -dir[2] then
             goto continue
         end
-
-        for _, dir in ipairs(puzzle.DIRECTIONS) do
-            if dir[1] == prevMove[1] and dir[2] == prevMove[2] then
-                goto continue_dir
-            end
-
-            local validMove, simPuzzle = cur:simulateMove(dir)
-            if not validMove then
-                goto continue_dir
-            end
-
-            if groupWithBlank[simPuzzle.board[simPuzzle.blankPos[1]][simPuzzle.blankPos[2]]] then
-                simPuzzle.count = simPuzzle.count + 1
-            end
-
-            table.insert(openList, {simPuzzle, {-dir[1], -dir[2]}})
-            ::continue_dir::
+        local validMove, simPuzzle = cur:simulateMove(dir)        
+    
+        if not validMove or isPuzzleInPath(simPuzzle, path) then
+            goto continue
         end
-        iter = iter + 1
-
-        if iter % 100000 == 0 then
-            local t2 = os.clock()
-            local tDelta = t2 - t1
-            print(string.format("Group %d, Iteration %d of %d, time elapsed: %f seconds", groupNum, iter, totIter, tDelta))
-            print("Size of closed list: ", #closedList)
-            print("Size of open list: ", #openList)
-            t1 = t2
+    
+        table.insert(path, simPuzzle)
+        table.insert(dirs, dir)
+    
+        local t = search(path, g + 1, bound, dirs)
+        if t == true then
+            return true
         end
+        if t < min then
+            min = t
+        end
+    
+        table.remove(path)
+        table.remove(dirs)
+    
         ::continue::
     end
-
-    return closedList
+    return min
 end
 
-function visitNode(puzzle, visited, closedList, groupWithBlank, group)
-    local puzzleHashWithBlank = puzzle.hash(groupWithBlank)
-    if visited[puzzleHashWithBlank] ~= nil then
-        return false
+local function idaStar(puzzle)
+    if puzzle:checkWin() then
+        return {}
     end
 
-    visited[puzzleHashWithBlank] = puzzleHashWithBlank
-
-    local groupHash = puzzle.hash(group)
-
-    if closedList[group] == nil then
-        closedList[groupHash] = puzzle.count
-    elseif closedList[groupHash] > puzzle.count then
-        closedList[groupHash] = puzzle.count
+    local bound = h(puzzle)
+    local path = {puzzle}
+    local dirs = {}
+    while true do
+        local rem = search(path, 0, bound, dirs)
+        if rem == true then
+            return dirs
+        elseif rem == INF then
+            return nil
+        end
+        bound = rem
     end
-
-    return true
 end
 
-local boardSize = 4
+local puzzle = Puzzle:new(4)
+winningPuzzleString = puzzle:serialize()
+puzzle:shuffle()
+local startingPuzzleState = puzzle:serialize()
 
--- 663
-local groups = {{1,5,6,9,10.13},{7,8,11,12,14,15},{2,3,4}}
+local directions = idaStar(puzzle)
 
-local closedList = {}
-
-for index, group in pairs(groups) do
-    table.insert(closedList, buildPatternDb(boardSize, group))
-end
-
-local serpent = require 'serpent'  -- Include serpent or similar library for serialization
-
--- Open the file for writing
-local patternDbFile = io.open('patternDb_' .. tostring(boardSize) .. '.dat', 'wb')
-if patternDbFile then
-    patternDbFile:write(serpent.dump(groups))    -- Serialize and write groups
-    patternDbFile:write(serpent.dump(closedList)) -- Serialize and write closedList
-    patternDbFile:close()  -- Close the file
-else
-    print("Failed to open file for writing.")
-end
-
--- Loop through closedList and print details
-for i, group in ipairs(closedList) do
-    print("Group:", groups[i], #group, "permutations")
+print("starting puzzle state: ", startingPuzzleState)
+for index, item in pairs(directions) do
+    print(item[3])
 end
