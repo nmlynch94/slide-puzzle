@@ -193,12 +193,7 @@ local function h(puzzle)
 end
 
 local function isPuzzleInPath(puzzle, path)
-    for index, priorPuzzle in pairs(path) do
-        if priorPuzzle:serialize() == puzzle:serialize() then
-            return true
-        end
-    end
-    return false
+    return path[puzzle:serialize()] ~= nil
 end
 
 function Puzzle:simulateMove(dir)
@@ -232,6 +227,8 @@ local function search(path, g, bound, dirs)
             goto continue
         end
     
+        local serializedPuzzle = simPuzzle:serialize()
+        path[serializedPuzzle] = "OCCUPIED"
         table.insert(path, simPuzzle)
         table.insert(dirs, dir)
     
@@ -243,7 +240,7 @@ local function search(path, g, bound, dirs)
             min = t
         end
     
-        table.remove(path)
+        path[serializedPuzzle] = nil
         table.remove(dirs)
     
         ::continue::
@@ -264,6 +261,7 @@ local function idaStar(puzzle)
         if rem == true then
             return dirs
         elseif rem == INF then
+            print(rem)
             return nil
         end
         bound = rem
