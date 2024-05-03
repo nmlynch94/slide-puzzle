@@ -2,10 +2,10 @@ math.randomseed(os.time())
 
 INF = 100000
 
-UP = {-1,0, "UP"}
-DOWN = {1,0, "DOWN"}
-LEFT = {0,-1 ,"LEFT"}
-RIGHT = {0,1, "RIGHT"}
+UP = {y = -1, x = 0, direction = "UP"}
+DOWN = {y = 1, x = 0, direction = "DOWN"}
+LEFT = {y = 0, x =-1 , direction = "LEFT"}
+RIGHT = {y = 0, x = 1, direction = "RIGHT"}
 
 DIRECTIONS = {UP, DOWN, LEFT, RIGHT}
 
@@ -62,7 +62,24 @@ function Puzzle:new(boardSize, initialState)
 
     instance.boardSize = boardSize or 3
     instance.board = {}
-    instance.blankPos = {boardSize, boardSize}
+    instance.blankPos = {x = boardSize, y = boardSize}
+
+    -- get the blank position from the initial state
+    if initialState ~= nil then
+        for iy = 1, #initialState do
+            local row = initialState[iy]
+            for ix = 1, #row do
+                local colVal = row[ix]
+                if colVal == 0 then
+                    instance.blankPos = {x = ix, y = iy}
+                    goto continue_blank_init                    
+                end
+            end
+        end
+    end
+    ::continue_blank_init::
+
+    instance.lockedPositions = {}
 
     -- Generate a board first in a solved state so we can create a reverse-index
     for y = 1, boardSize do
@@ -88,6 +105,16 @@ function Puzzle:new(boardSize, initialState)
     return instance
 end
 
+function Puzzle:blankManhattan(x, y)
+    local blankPosition = self.getPosition(self, 0)
+    local manhattanDistance = math.abs(blankPosition.x - x) + math.abs(blankPosition.y - y)
+    return manhattanDistance
+end
+
+function Puzzle:lockPosition(x, y)
+    table.insert(self.lockedPositions, {x = x, y = y})
+end
+
 function Puzzle:clone()
     local copy = Puzzle:new(self.boardSize)  -- This sets up a new Puzzle instance with the same board size.
     for y = 1, self.boardSize do
@@ -95,14 +122,10 @@ function Puzzle:clone()
             copy.board[y][x] = self.board[y][x]  -- Deep copy of the board.
         end
     end
-    copy.blankPos = {self.blankPos[1], self.blankPos[2]}  -- Copy of the blank position.
+    copy.blankPos = {x = self.blankPos.x, y = self.blankPos.y}  -- Copy of the blank position.
     copy.winningPuzzleString = self.winningPuzzleString  -- Copy the string if needed.
-    
-    -- Recreating goals mapping if necessary
-    copy.goals = {}
-    for value, pos in pairs(self.goals) do
-        copy.goals[value] = {x = pos.x, y = pos.y}
-    end
+
+    copy.lockedPositions = self.lockedPositions
 
     return copy
 end
@@ -155,6 +178,17 @@ function Puzzle:serialize()
     return table.concat(stateArray, "-")
 end
 
+function Puzzle:prettyPrint()
+    for iy = 1, self.boardSize do
+        local row = self.board[iy]
+        local formattedRow = {}
+        for _, num in ipairs(row) do
+            table.insert(formattedRow, string.format("%3d", num)) -- Adjust the width as needed (here, 3 characters)
+        end
+        print("[ " .. table.concat(formattedRow, " ") .. " ]")
+    end
+end
+
 function Puzzle:getTile(x, y)
     return self.board[y][x]
 end
@@ -179,14 +213,25 @@ function Puzzle:shuffle()
 end
 
 function Puzzle:move(direction)
-    local newBlankPosition = {self.blankPos[1] + direction[1], self.blankPos[2] + direction[2]}
-    if newBlankPosition[1] < 1 or newBlankPosition[2] > self.boardSize or newBlankPosition[1] > self.boardSize or newBlankPosition[2] < 1 then
+    local newBlankPosition = {x = self.blankPos.x + direction.x, y = self.blankPos.y + direction.y}
+    
+    if newBlankPosition.x < 1 
+    or newBlankPosition.y > self.boardSize 
+    or newBlankPosition.x > self.boardSize 
+    or newBlankPosition.y < 1 then    
         return false
     end
 
-    self.board[self.blankPos[1]][self.blankPos[2]] = self.board[newBlankPosition[1]][newBlankPosition[2]]
-    self.board[newBlankPosition[1]][newBlankPosition[2]] = 0
+    for i = 1, #self.lockedPositions do
+        if self.lockedPositions[i].x == newBlankPosition.x and self.lockedPositions[i].y == newBlankPosition.y then
+            return false
+        end
+    end
+
+    self.board[self.blankPos.y][self.blankPos.x] = self.board[newBlankPosition.y][newBlankPosition.x]
+    self.board[newBlankPosition.y][newBlankPosition.x] = 0
     self.blankPos = newBlankPosition
+
     return true
 end
 
@@ -235,6 +280,9 @@ function Puzzle:getHeuristic()
         end
     end
 
+    -- Loop through all values that are currently in their target rows and compare it with every other value. 
+    -- If valueA's current position is left of valueBs current position, and valueA's desired position is right of valueB's desired position
+    -- then that means they are a linear conflict. We only check for left/right vs right/left so it doesn't double-count a conflict
     for index = 1, #valuesInTargetRows do
         local item = valuesInTargetRows[index]
         for index2 = 1, #valuesInTargetRows do

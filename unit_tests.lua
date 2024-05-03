@@ -1,23 +1,152 @@
 local Puzzle = require("Puzzle")
 
-local stateA = {
-    {7, 10, 1, 14},
-    {6, 2, 9, 5},
-    {3, 11, 0, 4},
-    {8, 12, 13, 15}
-}
 
--- 5-6-3-2-1-4-8-7-0
 local stateB = {
-    {5, 6, 3},
-    {2, 1, 4},
-    {8, 7, 0}
+    {4, 14, 15, 2, 22},
+    {0, 23, 5, 11, 7},
+    {20, 3, 12, 6, 17},
+    {18, 19, 24, 8, 16},
+    {13, 10, 1, 9, 21}
 }
 
-local puzzle = Puzzle:new(4, stateA)
-puzzle:generateWinningString()
-print("State:", puzzle:serialize())
-local h = puzzle:getHeuristic()
-print(h)
-assert(h == 42, "Error getting heuristic")
-print("--------------END-------------------")
+local moveTests = {
+    {
+        preMoveState = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        postMoveState = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        direction = LEFT
+    },
+    {
+        preMoveState = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        postMoveState = {
+            {4, 14, 15, 2, 22},
+            {23, 0, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        direction = RIGHT
+    },
+    {
+        preMoveState = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        postMoveState = {
+            {0, 14, 15, 2, 22},
+            {4, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        direction = UP
+    },
+    {
+        preMoveState = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        postMoveState = {
+            {4, 14, 15, 2, 22},
+            {20, 23, 5, 11, 7},
+            {0, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        direction = DOWN
+    },
+}
+
+for index, testData in pairs(moveTests) do
+    print("TEST MOVING " .. testData.direction.x .. ", " .. testData.direction.y)
+    local puzzle = Puzzle:new(5, testData.preMoveState)
+    puzzle:generateWinningString()
+    print("State:", puzzle:serialize())
+    puzzle:move(testData.direction)
+    local preMoveState = puzzle:serialize()
+    puzzle:prettyPrint()
+    print("---------------")
+    Puzzle:new(5, testData.postMoveState):prettyPrint()
+    local postMoveState = Puzzle:new(5, testData.postMoveState):serialize()
+    assert(preMoveState == postMoveState, preMoveState .. " ~= " .. postMoveState)
+    print("------------------ END -------------------------")
+end
+
+local blankManhattanTest = {
+    {
+        state = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        expected = 1,
+        target = {x = 2, y = 2}
+    },
+    {
+        state = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        expected = 7,
+        target = {x = 5, y = 5}
+    },
+    {
+        state = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        expected = 5,
+        target = {x = 5, y = 1}
+    },
+    {
+        state = {
+            {4, 14, 15, 2, 22},
+            {0, 23, 5, 11, 7},
+            {20, 3, 12, 6, 17},
+            {18, 19, 24, 8, 16},
+            {13, 10, 1, 9, 21}
+        },
+        expected = 0,
+        target = {x = 1, y = 2}
+    },
+}
+
+for index, testData in pairs(blankManhattanTest) do
+    print("TEST BLANK MANHATTAN ")
+    local puzzle = Puzzle:new(5, testData.state)
+    print("State:", puzzle:serialize())
+    local h = puzzle:blankManhattan(testData.target.x, testData.target.y)
+    assert(h == testData.expected, h .. " ~= " .. testData.expected)
+    print("------------------ END -------------------------")
+end
