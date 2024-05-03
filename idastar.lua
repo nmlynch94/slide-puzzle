@@ -89,16 +89,8 @@ local function idaStar(puzzle)
     end
 end
 
-
--- profile.start()
--- local before = os.clock()
--- local directions = idaStar(puzzle)
--- local after = os.clock()
--- -- profile.stop()
--- print(string.format("Loop took %0.6f seconds to run: " .. startingState, after - before ))
-
 local paths = {}
--- Enumerate all possible paths from the blank to find the one we want
+-- Enumerate all possible paths from the blank to find the one we want. Heuristic is manhattan distance.
 local function searchBruceForce(path, closedPaths, target, bound, g)
     local newMoves = {}
 
@@ -168,7 +160,7 @@ local startingState = (puzzle:serialize())
 -- puzzle:lockPosition(2,2)
 local closedPaths = {}
 closedPaths[puzzle:serialize()] = "OCCUPIED"
-searchBruceForce(puzzle:clone(), closedPaths, target, 8, 0)
+searchBruceForce(puzzle:clone(), closedPaths, target, 10, 0)
 
 table.sort(paths, function(a, b)
     if a.h == b.h then
@@ -181,8 +173,12 @@ for i = 1, #paths do
     print("g: " .. paths[i].g .. " h: " .. paths[i].h .. " " .. paths[i].puzzle:serialize())
 end
 
+
+-- Print directions in reverse order
 local cur = paths[1]
 local directions = {}
+
+-- Use the parent to get the whole path
 while cur.parent ~= nil do
     table.insert(directions, cur.direction)
     cur = cur.parent
