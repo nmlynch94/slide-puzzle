@@ -174,6 +174,7 @@ table.sort(paths, function(a, b)
 end)
 
 -- Print directions in reverse order
+local cur = paths[1]
 local directions = {}
 
 -- Use the parent to get the whole path
