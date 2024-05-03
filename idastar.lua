@@ -1,3 +1,5 @@
+-- local profile = require("profile")
+
 local Puzzle = require("Puzzle")
 
 function deepcopy(orig)
@@ -21,12 +23,6 @@ end
 
 local function isPuzzleInPath(puzzle, path)
     return path[puzzle:serialize()] ~= nil
-end
-
-function Puzzle:simulateMove(dir)
-    local simPuzzle = deepcopy(self)
-    local moveSuccessful = simPuzzle:move(dir)
-    return moveSuccessful, simPuzzle
 end
 
 local function search(path, g, bound, dirs)
@@ -55,8 +51,8 @@ local function search(path, g, bound, dirs)
     
         local serializedPuzzle = simPuzzle:serialize()
         path[serializedPuzzle] = "OCCUPIED"
-        table.insert(path, simPuzzle)
-        table.insert(dirs, dir)
+        path[#path + 1] = simPuzzle
+        dirs[#dirs + 1] = dir
     
         local t = search(path, g + 1, bound, dirs)
         if t == true then
@@ -67,9 +63,8 @@ local function search(path, g, bound, dirs)
         end
     
         path[serializedPuzzle] = nil
-        table.remove(path)
-        table.remove(dirs)
-    
+        path[#path] = nil
+        dirs[#dirs] = nil
         ::continue::
     end
     return min
@@ -94,15 +89,23 @@ local function idaStar(puzzle)
     end
 end
 
-local puzzle = Puzzle:new(3)
+local stateB = {
+    {5, 6, 3},
+    {2, 1, 4},
+    {8, 7, 0}
+}
+
+local puzzle = Puzzle:new(3, stateB)
 puzzle:generateWinningString()
-puzzle:shuffle()
 local startingState = (puzzle:serialize())
+-- profile.start()
 local before = os.clock()
 local directions = idaStar(puzzle)
 local after = os.clock()
+-- profile.stop()
 print(string.format("Loop took %0.6f seconds to run: " .. startingState, after - before ))
 -- print(#directions)
 -- for index, dir in pairs(directions) do
 --   print(dir[3])
 -- end
+-- print(profile.report(10))

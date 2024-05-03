@@ -1,4 +1,3 @@
-
 math.randomseed(os.time())
 
 INF = 100000
@@ -89,6 +88,31 @@ function Puzzle:new(boardSize, initialState)
     return instance
 end
 
+function Puzzle:clone()
+    local copy = Puzzle:new(self.boardSize)  -- This sets up a new Puzzle instance with the same board size.
+    for y = 1, self.boardSize do
+        for x = 1, self.boardSize do
+            copy.board[y][x] = self.board[y][x]  -- Deep copy of the board.
+        end
+    end
+    copy.blankPos = {self.blankPos[1], self.blankPos[2]}  -- Copy of the blank position.
+    copy.winningPuzzleString = self.winningPuzzleString  -- Copy the string if needed.
+    
+    -- Recreating goals mapping if necessary
+    copy.goals = {}
+    for value, pos in pairs(self.goals) do
+        copy.goals[value] = {x = pos.x, y = pos.y}
+    end
+
+    return copy
+end
+
+function Puzzle:simulateMove(dir)
+    local simPuzzle = self.clone(self)
+    local moveSuccessful = simPuzzle:move(dir)
+    return moveSuccessful, simPuzzle
+end
+
 function Puzzle:getGoals()
     return self.goals
 end
@@ -106,7 +130,7 @@ function Puzzle:generateWinningString()
     local stateArray = {}
     for y = 1, self.boardSize do
         for x = 1, self.boardSize do
-            table.insert(stateArray, self.board[y][x])
+            table.insert(stateArray, tempBoard[y][x])
         end
     end
     stateArray[#stateArray] = 0
@@ -192,8 +216,10 @@ function Puzzle:getHeuristic()
     local valuesInTargetRows = {}
     local valuesInTargetCols = {}
 
-    for iy, row in ipairs(self.board) do
-        for ix, col in ipairs(row) do
+    for iy = 1, #self.board do
+        local row = self.board[iy]
+        for ix = 1, #row do
+            local col = row[ix]
             if col == 0 then goto continue_h end -- We don't care about manhattan for the blank tile
             local desiredPosition = self.goals[col]
             local currentPosition = {x = ix, y = iy}
@@ -209,8 +235,10 @@ function Puzzle:getHeuristic()
         end
     end
 
-    for index, item in ipairs(valuesInTargetRows) do
-        for index2, item2 in ipairs(valuesInTargetRows) do
+    for index = 1, #valuesInTargetRows do
+        local item = valuesInTargetRows[index]
+        for index2 = 1, #valuesInTargetRows do
+            local item2 = valuesInTargetRows[index2]
             if item.currentPosition.y == item2.currentPosition.y then
                 -- if the current positions are different relative directions than desired positions, linear conflict
                 if isRightOf(item.currentPosition, item2.currentPosition) and isLeftOf(item.desiredPosition, item2.desiredPosition) then
@@ -221,8 +249,10 @@ function Puzzle:getHeuristic()
         end
     end
 
-    for index, item in ipairs(valuesInTargetCols) do
-        for index2, item2 in ipairs(valuesInTargetCols) do
+    for index = 1, #valuesInTargetCols do
+        local item = valuesInTargetCols[index]
+        for index2 = 1,#valuesInTargetCols do
+            local item2 = valuesInTargetCols[index2]
             -- If they are in the same column AND it needs to move AND item2 is located in between
             if item.currentPosition.x == item2.currentPosition.x then
                 -- if the current positions are different relative directions than desired positions, linear conflict
@@ -235,40 +265,6 @@ function Puzzle:getHeuristic()
     end
 
     return h
-end
-
-function Puzzle:hash(group)
-    local boardSize = self.boardSize
-    if not group or next(group) == nil then
-        group = {}
-        for s = 0, boardSize * boardSize - 1 do
-            group[s] = true
-        end
-    end
-
-    local hashString = {}
-    for i = 1, boardSize do
-        for j = 1, boardSize do
-            local idx = self.board[i][j]
-            if group[idx] then
-                hashString[2 * idx + 1] = tostring(i - 1)  -- converting index and adjusting by -1 to match Python's 0-based indexing
-                hashString[2 * idx + 2] = tostring(j - 1)  -- same adjustment for columns
-            else
-                hashString[2 * idx + 1] = 'x'
-                hashString[2 * idx + 2] = 'x'
-            end
-        end
-    end
-
-    -- Removing 'x' characters and concatenating the string
-    local cleanHashString = {}
-    for k, v in ipairs(hashString) do
-        if v ~= 'x' then
-            table.insert(cleanHashString, v)
-        end
-    end
-
-    return table.concat(cleanHashString)
 end
 
 return Puzzle

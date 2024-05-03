@@ -7,7 +7,14 @@ local stateA = {
     {8, 12, 13, 15}
 }
 
-local puzzle = Puzzle:new(3, stateA)
+-- 5-6-3-2-1-4-8-7-0
+local stateB = {
+    {5, 6, 3},
+    {2, 1, 4},
+    {8, 7, 0}
+}
+
+local puzzle = Puzzle:new(4, stateA)
 puzzle:generateWinningString()
 print("State:", puzzle:serialize())
 local h = puzzle:getHeuristic()
