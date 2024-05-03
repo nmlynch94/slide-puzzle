@@ -98,7 +98,7 @@ local function searchBruceForce(path, closedPaths, target, bound, g)
         local validMove, newMove = path:simulateMove(LEFT)
         if validMove == true and closedPaths[newMove:serialize()] == nil then
             local h = newMove:blankManhattan(target.x, target.y)
-            print(h .. " " .. g .. " \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\"")
+            -- print(" \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\": h:" .. h .. " g:" .. g)
             table.insert(newMoves, { puzzle = newMove, h = h, parent = paths[path:serialize()], position = newMove:getPosition(0), g = g, direction = "LEFT"})
         end
     end
@@ -106,7 +106,7 @@ local function searchBruceForce(path, closedPaths, target, bound, g)
         local validMove, newMove = path:simulateMove(RIGHT)
         if validMove == true and closedPaths[newMove:serialize()] == nil then
             local h = newMove:blankManhattan(target.x, target.y)
-            print(h .. " " .. g .. " \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\"")
+            -- print(" \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\": h:" .. h .. " g:" .. g)
             table.insert(newMoves, { puzzle = newMove, h = h, parent = paths[path:serialize()], position = newMove:getPosition(0), g = g, direction = "RIGHT"})
         end
     end
@@ -114,7 +114,7 @@ local function searchBruceForce(path, closedPaths, target, bound, g)
         local validMove, newMove = path:simulateMove(UP)
         if validMove == true and closedPaths[newMove:serialize()] == nil then
             local h = newMove:blankManhattan(target.x, target.y)
-            print(h .. " " .. g .. " \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\"")
+            -- print(" \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\": h:" .. h .. " g:" .. g)
             table.insert(newMoves, { puzzle = newMove, h = h, parent = paths[path:serialize()], position = newMove:getPosition(0), g = g, direction = "UP"})
         end
     end
@@ -122,7 +122,7 @@ local function searchBruceForce(path, closedPaths, target, bound, g)
         local validMove, newMove = path:simulateMove(DOWN)
         if validMove == true and closedPaths[newMove:serialize()] == nil then
             local h = newMove:blankManhattan(target.x, target.y)
-            print(h .. " " .. g .. " \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\"")
+            -- print(" \"" .. path:serialize() .. "\" -> \"" .. newMove:serialize() .. "\": h:" .. h .. " g:" .. g)
             table.insert(newMoves, { puzzle = newMove, h = h, parent = paths[path:serialize()], position = newMove:getPosition(0), g = g, direction = "DOWN"})
         end
     end
@@ -145,16 +145,19 @@ end
 local target = {x = 2, y = 1}
 local stateB = {
     {4, 14, 15, 2, 22},
-    {0, 23, 5, 11, 7},
+    {21, 23, 5, 11, 7},
     {20, 3, 12, 6, 17},
     {18, 19, 24, 8, 16},
-    {13, 10, 1, 9, 21}
+    {13, 10, 1, 9, 0}
 }
 
 local puzzle = Puzzle:new(5, stateB)
 puzzle:generateWinningString()
 puzzle:lockPosition(1, 1)
 puzzle:lockPosition(2, 2)
+puzzle:lockPosition(3, 2)
+puzzle:lockPosition(5, 2)
+-- puzzle:shuffle()
 local startingState = (puzzle:serialize())
 -- puzzle:lockPosition(1,1)
 -- puzzle:lockPosition(2,2)
@@ -163,19 +166,14 @@ closedPaths[puzzle:serialize()] = "OCCUPIED"
 searchBruceForce(puzzle:clone(), closedPaths, target, 10, 0)
 
 table.sort(paths, function(a, b)
-    if a.h == b.h then
-        return a.g < b.g
+    if a.h ~= b.h then
+        return a.h < b.h
     end
-    return a.h < b.h  -- Primary sort by 'h'
+
+    return a.g < b.g
 end)
 
-for i = 1, #paths do
-    print("g: " .. paths[i].g .. " h: " .. paths[i].h .. " " .. paths[i].puzzle:serialize())
-end
-
-
 -- Print directions in reverse order
-local cur = paths[1]
 local directions = {}
 
 -- Use the parent to get the whole path
