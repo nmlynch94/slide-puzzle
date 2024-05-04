@@ -174,9 +174,9 @@ local function pathBlankToPosition(puzzle, target)
         table.insert(directions, cur.direction)
     end
 
-    for i = #directions, 1, -1 do
-        print(directions[i])
-    end
+    -- for i = #directions, 1, -1 do
+    --     print(directions[i])
+    -- end
     return directions, paths[1].puzzle
 end
 
@@ -184,75 +184,68 @@ end
 -- This assumes the blank tile is already placed adjacent to another tile in the proper position.
 -- direction is the direction we want to move the adjacent tile
 -- tilesToMove is the number of spaces we want to move our target
-local function moveXAlgorithm(puzzle, direction, tilesToMove)
-    print("======================")
-    puzzle:prettyPrint()
-    if direction == LEFT then
-        if tilesToMove > 1 then
-            for i = 1, tilesToMove - 1 do
-                print("--------------")
-                puzzle:move(RIGHT)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(DOWN)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(LEFT)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(LEFT)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(UP)
-                print("--------------")
-                puzzle:prettyPrint()
-            end
-        else 
-            
-        end
-        puzzle:move(RIGHT)
-        puzzle:prettyPrint()
-        print("tttttttttttttttttt")
-    end
-end
+local function moveAlgorithm(puzzle, direction, tilesToMove)
+    print("Starting movement algorithm")
+    prettyPrint(puzzle:getLockedPositions())
 
-local function moveYAlgorithm(puzzle, direction, tilesToMove)
-    print(tilesToMove)
-    print("======================~~~~")
-    puzzle:prettyPrint()
-    if direction == UP then
-        if tilesToMove > 1 then
+    local oppositeDirection
+    if direction == LEFT or direction == RIGHT then
+        if direction == LEFT then
+            oppositeDirection = RIGHT
+        else
+            oppositeDirection = LEFT
+        end
+    end
+    
+    if direction == UP or direction == DOWN then
+        if direction == DOWN then
+            oppositeDirection = UP
+        else
+            oppositeDirection = DOWN
+        end
+    end
+
+    local function getReturnDirection()
+        if direction == LEFT or direction == RIGHT then
+            if puzzle:getPosition(0).y >= puzzle:getBoardSize() then
+                return {DOWN, UP}
+            end
+            return {UP, DOWN}
+        end
+
+        if direction == UP or direction == DOWN then
+            if puzzle:getPosition(0).x >= puzzle:getBoardSize() then
+                return {LEFT, RIGHT}
+            end
+            return {RIGHT, LEFT}
+        end
+        
+    end
+
+    if tilesToMove > 1 then
+        for i = 1, tilesToMove - 1 do
             print(tilesToMove)
-            for i = 1, tilesToMove - 1 do
-                print("asdf: ", i)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(DOWN)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(RIGHT)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(UP)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(UP)
-                print("--------------")
-                puzzle:prettyPrint()
-                puzzle:move(LEFT)
-                print("--------------")
-                puzzle:prettyPrint()
-            end
-        end
-        puzzle:move(DOWN)
-        puzzle:prettyPrint()
-        print("tttttttttttttttttt")
-        puzzle:prettyPrint()
+            prettyPrint(direction)
+            prettyPrint(oppositeDirection)
+            puzzle:move(oppositeDirection)
+            puzzle:move(getReturnDirection()[1])
+            puzzle:move(direction)
+            puzzle:move(direction)
+            puzzle:move(getReturnDirection()[2])
+        end   
+        puzzle:move(oppositeDirection)
+    elseif tilesToMove == 1 then
+        puzzle:move(oppositeDirection)
     end
 end
 
-local function solve(puzzle, onePosition, desiredPosition, tileValue)
+function solve(puzzle, onePosition, desiredPosition, tileValue)
+
+    print("SOLVING ", tileValue, "TO", desiredPosition.x, desiredPosition.y)
+    puzzle:prettyPrint()
+    
     if onePosition.x ~= desiredPosition.x or onePosition.y ~= desiredPosition.y then
+
         if isRightOf(onePosition, desiredPosition) then
             puzzle:lockPosition(onePosition.x, onePosition.y)
             local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x - 1, y = onePosition.y})
@@ -262,18 +255,25 @@ local function solve(puzzle, onePosition, desiredPosition, tileValue)
             puzzle:lockPosition(onePosition.x, onePosition.y)
             local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x + 1, y = onePosition.y})
             puzz:unlockLatest()
-            puzzle = puzz    
+            puzzle = puzz
         end
     
         local onePosition = puzzle:getPosition(tileValue);
-        local desiredOnePosition = puzzle:getGoals(tileValue)[tileValue]
+        local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
+        local horizontalDirection
+        if isRightOf(onePosition, desiredPosition) then
+            horizontalDirection = LEFT
+            print("ITLEFT")
+        else
+            horizontalDirection = RIGHT
+            print("ITRIGHT")
+        end
+        
     
-        local tilesToMove = math.abs(onePosition.x - desiredOnePosition.x)
+        local tilesToMove = math.abs(onePosition.x - desiredPosition.x)
     
-        moveXAlgorithm(puzzle, LEFT, tilesToMove)
-    
-        puzzle:prettyPrint()
-    
+        moveAlgorithm(puzzle, horizontalDirection, tilesToMove)
+        
         local onePosition = puzzle:getPosition(tileValue);
         local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
     
@@ -294,35 +294,134 @@ local function solve(puzzle, onePosition, desiredPosition, tileValue)
     
         local tilesToMove = math.abs(onePosition.y - desiredOnePosition.y)
     
-        moveYAlgorithm(puzzle, UP, tilesToMove)
+        moveAlgorithm(puzzle, UP, tilesToMove)
     
-        puzzle:prettyPrint()
     end
     puzzle:lockPosition(desiredPosition.x, desiredPosition.y)
     return puzzle
 end
 
 local state = {
-    {   6,   4,   3,  15,  17 },
-    {   9,  23,   5,   2,  14 },
-    {   11,   0,  1,   7,  13 },
-    {  10,  12,   8,  19,  20 },
-    {  22,  21,  16,  18,  24 },
+    {   6,   2,  19,  16,  15 },
+    {  22,  12,  23,  17,  13 },
+    {   9,   5,   0,   7,  14 },
+    {  24,   8,   1,  21,  20 },
+    {  10,  18,   4,   3,  11 }
 }
 
-local puzzle = Puzzle:new(5, state)
-puzzle:generateWinningString()
+-- local puzzle = Puzzle:new(5, state)
+-- puzzle:generateWinningString()
+-- -- puzzle:shuffle()
 
-print("Starting position")
-puzzle:prettyPrint()
+-- print("Starting position")
+-- puzzle:prettyPrint()
 
-local puzzle = solve(puzzle, puzzle:getPosition(1), puzzle:getGoals()[1], 1)
-puzzle = solve(puzzle, puzzle:getPosition(2), puzzle:getGoals()[2], 2)
-puzzle = solve(puzzle, puzzle:getPosition(3), puzzle:getGoals()[3], 3)
--- Switch to a modified goals state so that we place the 4 and 5 in a specific way to solve them (for a 5x5 puzzle, but this example applies for all sizes). The location of those two tiles is all that matters
-local newGoals = puzzle:getGoals()
--- This is modifying the goals table so that our algorithm 
-newGoals[puzzle:getBoardSize() - 1] = {y = 1, x = 5}
-newGoals[puzzle:getBoardSize()] = {y = 2, x = 5}
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle:prettyPrint()
+-- local puzzle = solve(puzzle, puzzle:getPosition(1), puzzle:getGoals()[1], 1)
+-- puzzle = solve(puzzle, puzzle:getPosition(2), puzzle:getGoals()[2], 2)
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle:prettyPrint()
 
-puzzle = solve(puzzle, puzzle:getPosition(4), puzzle:getGoals()[4], 4)
+-- puzzle = solve(puzzle, puzzle:getPosition(3), puzzle:getGoals()[3], 3)
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle:prettyPrint()
+
+-- -- Switch to a modified goals state so that we place the 4 and 5 in a specific way to solve them (for a 5x5 puzzle, but this example applies for all sizes). The location of those two tiles is all that matters
+-- local newGoals = puzzle:getGoals()
+-- -- This is modifying the goals table so that our algorithm 
+-- newGoals[puzzle:getBoardSize() - 1] = {y = 1, x = puzzle:getBoardSize()}
+-- newGoals[puzzle:getBoardSize()] = {y = 2, x = puzzle:getBoardSize()}
+
+-- puzzle = solve(puzzle, puzzle:getPosition(4), puzzle:getGoals()[4], 4)
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle:prettyPrint()
+-- puzzle = solve(puzzle, puzzle:getPosition(5), puzzle:getGoals()[5], 5)
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle:prettyPrint()
+
+
+
+
+
+-- -- Get the directions to move the 0 to x = boardSize - 1, and y = 1 to move the 4 and 5 (in a 5x5) into place
+-- local directions, _ = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 1})
+-- for i = #directions, 1, -1 do
+--     print("STARTING")
+--     local dir = directions[i]
+--     if dir == "LEFT" then
+--         puzzle:move(LEFT)
+--     elseif dir == "RIGHT" then
+--         puzzle:move(RIGHT)
+--     elseif dir == "UP" then
+--         puzzle:move(UP)
+--     elseif dir == "DOWN" then
+--         puzzle:move(DOWN)
+--     end
+-- end
+-- -- Unlock n - 1 temporarily
+-- puzzle:unlock(puzzle:getBoardSize() - 1, 1)
+-- puzzle:move(RIGHT)
+-- puzzle:move(DOWN)
+-- puzzle:lockPosition(puzzle:getBoardSize() - 1, 1)
+
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle = solve(puzzle, puzzle:getPosition(6), puzzle:getGoals()[6], 6)
+-- puzzle = solve(puzzle, puzzle:getPosition(7), puzzle:getGoals()[7], 7)
+-- puzzle = solve(puzzle, puzzle:getPosition(8), puzzle:getGoals()[8], 8)
+
+-- -- This is modifying the goals table so that our algorithm 
+-- newGoals[puzzle:getBoardSize()* 2 - 1] = {y = 2, x = puzzle:getBoardSize()}
+-- newGoals[puzzle:getBoardSize() * 2] = {y = 3, x = puzzle:getBoardSize()}
+
+-- puzzle = solve(puzzle, puzzle:getPosition(9), puzzle:getGoals()[9], 9)
+-- puzzle = solve(puzzle, puzzle:getPosition(10), puzzle:getGoals()[10], 10)
+
+-- -- Get the directions to move the 0 to x = boardSize - 1, and y = 1 to move the 4 and 5 (in a 5x5) into place
+-- local directions, _ = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 2})
+-- for i = #directions, 1, -1 do
+--     print("STARTING")
+--     local dir = directions[i]
+--     if dir == "LEFT" then
+--         puzzle:move(LEFT)
+--     elseif dir == "RIGHT" then
+--         puzzle:move(RIGHT)
+--     elseif dir == "UP" then
+--         puzzle:move(UP)
+--     elseif dir == "DOWN" then
+--         puzzle:move(DOWN)
+--     end
+-- end
+
+-- -- Unlock n - 1 temporarily
+-- puzzle:unlock(puzzle:getBoardSize() - 1, 2)
+-- puzzle:move(RIGHT)
+-- puzzle:move(DOWN)
+-- puzzle:lockPosition(puzzle:getBoardSize() - 1, 2)
+
+-- -- puzzle = solve(puzzle, puzzle:getPosition(11), puzzle:getGoals()[11], 11)
+
+-- -- This is modifying the goals table so that our algorithm 
+-- -- newGoals[puzzle:getBoardSize() * 3 + 1] = {y = puzzle:getBoardSize(), x = 1}
+-- -- newGoals[puzzle:getBoardSize() * 4 + 1] = {y = puzzle:getBoardSize(), x = 2}
+
+-- prettyPrint(puzzle:getLockedPositions())
+-- puzzle = solve(puzzle, puzzle:getPosition(16), puzzle:getGoals()[16], 16)
+-- puzzle = solve(puzzle, puzzle:getPosition(21), puzzle:getGoals()[21], 21)
+
+-- Get the directions to move the 0 to x = boardSize - 1, and y = 1 to move the 4 and 5 (in a 5x5) into place
+-- local directions, _ = pathBlankToPosition(puzzle, {x = 1, y = puzzle:getBoardSize() - 1})
+-- for i = #directions, 1, -1 do
+--     print("STARTING")
+--     local dir = directions[i]
+--     if dir == "LEFT" then
+--         puzzle:move(LEFT)
+--     elseif dir == "RIGHT" then
+--         puzzle:move(RIGHT)
+--     elseif dir == "UP" then
+--         puzzle:move(UP)
+--     elseif dir == "DOWN" then
+--         puzzle:move(DOWN)
+--     end
+-- end
+

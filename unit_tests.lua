@@ -1,4 +1,5 @@
 local Puzzle = require("Puzzle")
+local idastar = require("idastar")
 
 
 local stateB = {
@@ -150,3 +151,17 @@ for index, testData in pairs(blankManhattanTest) do
     assert(h == testData.expected, h .. " ~= " .. testData.expected)
     print("------------------ END -------------------------")
 end
+
+local start = {
+    {   1,   2,   3,   6,  15 },
+    {  12,   8,   0,  16,  13 },
+    {  22,  24,  17,  19,  14 },
+    {   9,   5,   7,  23,  20 },
+    {  10,  18,  21,   4,  11 }
+}
+-- THIS ISN"T WORKING
+local puzzle = Puzzle:new(5, start)
+puzzle:generateWinningString()
+puzzle:prettyPrint()
+puzzle = solve(puzzle, puzzle:getPosition(4), puzzle:getGoals()[4], 4)
+puzzle:prettyPrint()

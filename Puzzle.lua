@@ -119,7 +119,17 @@ function Puzzle:unlockLatest()
     table.remove(self.lockedPositions)
 end
 
+function Puzzle:getLockedPositions()
+    print("these ones")
+    return self.lockedPositions
+end
+
 function Puzzle:unlock(x, y)
+    for i = 1, #self.lockedPositions do
+        if self.lockedPositions[i].x == x and self.lockedPositions[i].y == y then
+            self.lockedPositions[i] = nil
+        end
+    end
     self.lockedPositions = {}
 end
 
@@ -132,8 +142,11 @@ function Puzzle:clone()
     end
     copy.blankPos = {x = self.blankPos.x, y = self.blankPos.y}  -- Copy of the blank position.
     copy.winningPuzzleString = self.winningPuzzleString  -- Copy the string if needed.
+    copy.goals = self.goals
 
     copy.lockedPositions = self.lockedPositions
+
+    prettyPrint(copy.lockedPositions)
 
     return copy
 end
@@ -225,6 +238,12 @@ function Puzzle:shuffle()
 end
 
 function Puzzle:move(direction)
+    print("Moving....", direction.x, direction.y)
+
+    self:prettyPrint()
+    print("            |")
+    print("            |")
+    print("            V")
     local newBlankPosition = {x = self.blankPos.x + direction.x, y = self.blankPos.y + direction.y}
     
     if newBlankPosition.x < 1 
@@ -236,6 +255,7 @@ function Puzzle:move(direction)
 
     for i = 1, #self.lockedPositions do
         if self.lockedPositions[i].x == newBlankPosition.x and self.lockedPositions[i].y == newBlankPosition.y then
+            print("LOCKED")
             return false
         end
     end
@@ -244,6 +264,8 @@ function Puzzle:move(direction)
     self.board[newBlankPosition.y][newBlankPosition.x] = 0
     self.blankPos = newBlankPosition
 
+    self:prettyPrint()
+    print("--------------")
     return true
 end
 
@@ -253,9 +275,6 @@ end
 
 -- Any objects that have an x and y property will work here e.g. {x = 1, y = 2, ...anything else}
 function isRightOf(item1, item2)
-    print("laksjdflaksjdf")
-    prettyPrint(item1)
-    prettyPrint(item2)
     return item1.x > item2.x
 end
 
