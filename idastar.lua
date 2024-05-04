@@ -90,6 +90,7 @@ local function idaStar(puzzle)
 end
 
 function pathBlankToPosition(puzzle, target)
+    local originalPuzzle = puzzle:clone()
 
     local paths = {}
 -- Enumerate all possible paths 10 spaces from the blank to find the one we want. Heuristic is manhattan distance.
@@ -174,10 +175,19 @@ function pathBlankToPosition(puzzle, target)
         table.insert(directions, cur.direction)
     end
 
-    -- for i = #directions, 1, -1 do
-    --     print(directions[i])
-    -- end
-    return directions, paths[1].puzzle
+    for i = #directions, 1, -1 do
+        local dir = directions[i]
+        if dir == "LEFT" then
+            originalPuzzle:move(LEFT)
+        elseif dir == "RIGHT" then
+            originalPuzzle:move(RIGHT)
+        elseif dir == "UP" then
+            originalPuzzle:move(UP)
+        elseif dir == "DOWN" then
+            originalPuzzle:move(DOWN)
+        end
+    end
+    return directions, originalPuzzle
 end
 
 -- Runs an algorithm with the blank tile to move a tile right or left. \
@@ -239,70 +249,114 @@ function moveAlgorithm(puzzle, direction, tilesToMove)
     end
 end
 
-function solve(puzzle, onePosition, desiredPosition, tileValue)
+function moveX(puzzle, onePosition, desiredPosition, tileValue)
+    print("STARTING HORIZONTAL MOVEMENT")
+    if onePosition.x == desiredPosition.x then
+        print("NO HORIZONTAL MOVEMENT NEEDED")
+        return puzzle
+    end
+
+    if isRightOf(onePosition, desiredPosition) then
+        puzzle:lockPosition(onePosition.x, onePosition.y)
+        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x - 1, y = onePosition.y})
+        puzz:unlockLatest()
+        puzzle = puzz
+    else
+        puzzle:lockPosition(onePosition.x, onePosition.y)
+        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x + 1, y = onePosition.y})
+        puzz:unlockLatest()
+        puzzle = puzz
+    end
+
+    local onePosition = puzzle:getPosition(tileValue);
+    local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
+    local horizontalDirection
+    if isRightOf(onePosition, desiredPosition) then
+        horizontalDirection = LEFT
+        print("ITLEFT")
+    else
+        horizontalDirection = RIGHT
+        print("ITRIGHT")
+    end
+    
+
+    local tilesToMove = math.abs(onePosition.x - desiredPosition.x)
+
+    moveAlgorithm(puzzle, horizontalDirection, tilesToMove)
+    return puzzle
+end
+
+function moveY(puzzle, onePosition, desiredPosition, tileValue)
+    print("STARTING VERTICAL MOVEMENT")
+    if onePosition.y == desiredPosition.y then
+        print("NO VERTICAL MOVEMENT NEEDED")
+        return puzzle
+    end
+
+    if isAbove(onePosition, desiredPosition) then
+        puzzle:lockPosition(onePosition.x, onePosition.y)
+        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y + 1})
+        puzz:unlockLatest()
+        puzzle = puzz
+    else
+        puzzle:lockPosition(onePosition.x, onePosition.y)
+        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y - 1})
+        puzz:unlockLatest()
+        puzzle = puzz    
+    end
+
+    local onePosition = puzzle:getPosition(tileValue);
+    local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
+    local verticalDirection
+    if isAbove(onePosition, desiredPosition) then
+        verticalDirection = DOWN
+        print("ITUP")
+    else
+        verticalDirection = UP
+        print("ITDOWN")
+    end
+
+    local tilesToMove = math.abs(onePosition.y - desiredPosition.y)
+
+    moveAlgorithm(puzzle, verticalDirection, tilesToMove)
+    return puzzle
+end
+
+function solve(puzzle, onePosition, desiredPosition, tileValue, horizontalMovementFirst)
 
     print("SOLVING ", tileValue, "TO", desiredPosition.x, desiredPosition.y)
     puzzle:prettyPrint()
     
     if onePosition.x ~= desiredPosition.x or onePosition.y ~= desiredPosition.y then
 
-        if isRightOf(onePosition, desiredPosition) then
-            puzzle:lockPosition(onePosition.x, onePosition.y)
-            local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x - 1, y = onePosition.y})
-            puzz:unlockLatest()
-            puzzle = puzz
+        local horizontalMovementFirst
+        if desiredPosition.x <= 2 then
+            horizontalMovementFirst = false
         else
-            puzzle:lockPosition(onePosition.x, onePosition.y)
-            local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x + 1, y = onePosition.y})
-            puzz:unlockLatest()
-            puzzle = puzz
+            horizontalMovementFirst = true
         end
-    
-        local onePosition = puzzle:getPosition(tileValue);
-        local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
-        local horizontalDirection
-        if isRightOf(onePosition, desiredPosition) then
-            horizontalDirection = LEFT
-            print("ITLEFT")
-        else
-            horizontalDirection = RIGHT
-            print("ITRIGHT")
-        end
+
+        if (horizontalMovementFirst == true) then
+            local onePosition = puzzle:getPosition(tileValue);
+            local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
+
+            puzzle = moveX(puzzle, onePosition, desiredPosition, tileValue)
         
-    
-        local tilesToMove = math.abs(onePosition.x - desiredPosition.x)
-    
-        moveAlgorithm(puzzle, horizontalDirection, tilesToMove)
+            local onePosition = puzzle:getPosition(tileValue);
+            local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
         
-        local onePosition = puzzle:getPosition(tileValue);
-        local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
-    
-        if isAbove(onePosition, desiredPosition) then
-            puzzle:lockPosition(onePosition.x, onePosition.y)
-            local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y + 1})
-            puzz:unlockLatest()
-            puzzle = puzz
+            puzzle = moveY(puzzle, onePosition, desiredPosition, tileValue)
         else
-            puzzle:lockPosition(onePosition.x, onePosition.y)
-            local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y - 1})
-            puzz:unlockLatest()
-            puzzle = puzz    
+            local onePosition = puzzle:getPosition(tileValue);
+            local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
+
+            puzzle = moveY(puzzle, onePosition, desiredPosition, tileValue)
+        
+            local onePosition = puzzle:getPosition(tileValue);
+            local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
+        
+            puzzle = moveX(puzzle, onePosition, desiredPosition, tileValue)
         end
-    
-        local onePosition = puzzle:getPosition(tileValue);
-        local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
-        local verticalDirection
-        if isAbove(onePosition, desiredPosition) then
-            verticalDirection = DOWN
-            print("ITUP")
-        else
-            verticalDirection = UP
-            print("ITDOWN")
-        end
-    
-        local tilesToMove = math.abs(onePosition.y - desiredPosition.y)
-    
-        moveAlgorithm(puzzle, verticalDirection, tilesToMove)
     
     end
     print("tile value: " .. tileValue)
@@ -358,19 +412,19 @@ local newGoals = puzzle:getGoals()
 newGoals[puzzle:getBoardSize() - 1] = {y = 1, x = puzzle:getBoardSize()}
 newGoals[puzzle:getBoardSize()] = {y = 2, x = puzzle:getBoardSize()}
 
-local fiveLocation = puzzle:getPosition(5)
-if fiveLocation.y == 1 then
-    print("NEED TO MOVE 5 OUT OF THE WAY")
-    local newFiveLocation = {x = fiveLocation.x, y = 3}
-    local priorFiveGoal = puzzle:getGoals()[5]
+local value = 5
+local location = puzzle:getPosition(value)
+if location.y == 1 then
+    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+    local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
+    local priorGoal = puzzle:getGoals()[value]
     -- change goal so we can move the 5 out of the way
-    newGoals[puzzle:getBoardSize()] = newFiveLocation
-    puzzle = solve(puzzle, puzzle:getPosition(5), puzzle:getGoals()[5], 5)
+    newGoals[value] = newLocation
+    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
     -- fix goal position back to normal
-    newGoals[puzzle:getBoardSize()] = priorFiveGoal
+    newGoals[value] = priorGoal
     -- remove the lock that gets placed
-    puzzle:unlock(newFiveLocation.x, newFiveLocation.y)
-
+    puzzle:unlock(newLocation.x, newLocation.y)
 end
 
 puzzle = solve(puzzle, puzzle:getPosition(4), puzzle:getGoals()[4], 4)
@@ -399,9 +453,24 @@ puzzle = solve(puzzle, puzzle:getPosition(6), puzzle:getGoals()[6], 6)
 
 puzzle = solve(puzzle, puzzle:getPosition(11), puzzle:getGoals()[11], 11)
 
--- This is modifying the goals table so that our algorithm 
+-- This is modifying the goals table so that our algorithm paths to the right spot
 newGoals[puzzle:getBoardSize() * 3 + 1] = {y = puzzle:getBoardSize(), x = 1}
 newGoals[puzzle:getBoardSize() * 4 + 1] = {y = puzzle:getBoardSize(), x = 2}
+
+local value = 21
+local location = puzzle:getPosition(value)
+if location.x == 1 then
+    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+    local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
+    local priorGoal = puzzle:getGoals()[value]
+    -- change goal so we can move the 5 out of the way
+    newGoals[value] = newLocation
+    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+    -- fix goal position back to normal
+    newGoals[value] = priorGoal
+    -- remove the lock that gets placed
+    puzzle:unlock(newLocation.x, newLocation.y)
+end
 
 puzzle = solve(puzzle, puzzle:getPosition(16), puzzle:getGoals()[16], 16)
 puzzle = solve(puzzle, puzzle:getPosition(21), puzzle:getGoals()[21], 21)
@@ -413,11 +482,107 @@ puzzle:unlock(1, puzzle:getBoardSize())
 puzzle:unlock(2, puzzle:getBoardSize())
 puzzle:move(DOWN, true, true)
 puzzle:move(RIGHT, true, true)
-puzzle:unlock(1, puzzle:getBoardSize())
+puzzle:lockPosition(1, puzzle:getBoardSize() - 1)
+puzzle:lockPosition(1, puzzle:getBoardSize())
+
+puzzle = solve(puzzle, puzzle:getPosition(7), puzzle:getGoals()[7], 7)
+puzzle = solve(puzzle, puzzle:getPosition(8), puzzle:getGoals()[8], 8)
+
+local value = 10
+local location = puzzle:getPosition(value)
+if location.y == 2 then
+    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+    local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
+    local priorGoal = puzzle:getGoals()[value]
+    -- change goal so we can move the 5 out of the way
+    newGoals[value] = newLocation
+    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+    -- fix goal position back to normal
+    newGoals[value] = priorGoal
+    -- remove the lock that gets placed
+    puzzle:unlock(newLocation.x, newLocation.y)
+end
+
+-- This is modifying the goals table so that our algorithm paths to the right spot
+newGoals[puzzle:getBoardSize() * 2 -1] = {y = 2, x = puzzle:getBoardSize()}
+newGoals[puzzle:getBoardSize() * 2] = {y = 3, x = puzzle:getBoardSize()}
+
+puzzle = solve(puzzle, puzzle:getPosition(9), puzzle:getGoals()[9], 9)
+puzzle = solve(puzzle, puzzle:getPosition(10), puzzle:getGoals()[10], 10)
+
+local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 2})
+puzzle = movedPuzzle
+
+puzzle:unlock(puzzle:getBoardSize(), 2)
+puzzle:unlock(puzzle:getBoardSize(), 3)
+puzzle:move(RIGHT, true, true)
+puzzle:move(DOWN, true, true)
+puzzle:lockPosition(puzzle:getBoardSize() - 1, 2)
+puzzle:lockPosition(puzzle:getBoardSize(), 2)
+puzzle:prettyPrint()
+
+puzzle = solve(puzzle, puzzle:getPosition(12), puzzle:getGoals()[12], 12)
+
+local value = 22
+local location = puzzle:getPosition(value)
+if location.x == 2 then
+    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+    local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
+    local priorGoal = puzzle:getGoals()[value]
+    -- change goal so we can move the 5 out of the way
+    newGoals[value] = newLocation
+    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+    -- fix goal position back to normal
+    newGoals[value] = priorGoal
+    -- remove the lock that gets placed
+    puzzle:unlock(newLocation.x, newLocation.y)
+end
+
+-- This is modifying the goals table so that our algorithm paths to the right spot
+newGoals[puzzle:getBoardSize() * 3 + 2] = {y = puzzle:getBoardSize(), x = 2}
+newGoals[puzzle:getBoardSize() * 4 + 2] = {y = puzzle:getBoardSize(), x = 3}
+
+puzzle = solve(puzzle, puzzle:getPosition(17), puzzle:getGoals()[17], 17)
+puzzle = solve(puzzle, puzzle:getPosition(22), puzzle:getGoals()[22], 22)
+
+local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = 2, y = puzzle:getBoardSize() - 1})
+puzzle = movedPuzzle
+
 puzzle:unlock(2, puzzle:getBoardSize())
+puzzle:unlock(3, puzzle:getBoardSize())
+puzzle:move(DOWN, true, true)
+puzzle:move(RIGHT, true, true)
+puzzle:lockPosition(2, puzzle:getBoardSize())
+puzzle:lockPosition(2, puzzle:getBoardSize())
+puzzle:prettyPrint()
 
+new_array = {}
+for i = 1, 3 do
+    new_array[i] = {}
+    for j = 1, 3 do
+        new_array[i][j] = 0
+    end
+end
 
+local original_array = puzzle:getBoard()
+-- Map and fill the new array
+for i = 1, 3 do
+    for j = 1, 3 do
+        if original_array[2+i][2+j] == 0 then
+            new_array[i][j] = 9  -- Map 0 to 9
+        else
+            new_array[i][j] = original_array[2+i][2+j]
+        end
+    end
+end
 
+-- Print the new 3x3 array
+for i = 1, 3 do
+    for j = 1, 3 do
+        io.write(new_array[i][j], " ")
+    end
+    print()
+end
 
 
 

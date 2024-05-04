@@ -63,6 +63,7 @@ function Puzzle:new(boardSize, initialState)
     instance.boardSize = boardSize or 3
     instance.board = {}
     instance.blankPos = {x = boardSize, y = boardSize}
+    instance.directions = {}
 
     -- get the blank position from the initial state
     if initialState ~= nil then
@@ -144,6 +145,7 @@ function Puzzle:clone()
     copy.blankPos = {x = self.blankPos.x, y = self.blankPos.y}  -- Copy of the blank position.
     copy.winningPuzzleString = self.winningPuzzleString  -- Copy the string if needed.
     copy.goals = self.goals
+    copy.directions = self.directions
 
     copy.lockedPositions = self.lockedPositions
 
@@ -152,7 +154,7 @@ end
 
 function Puzzle:simulateMove(dir)
     local simPuzzle = self.clone(self)
-    local moveSuccessful = simPuzzle:move(dir, false)
+    local moveSuccessful = simPuzzle:move(dir, false, false)
     return moveSuccessful, simPuzzle
 end
 
@@ -236,7 +238,14 @@ function Puzzle:shuffle()
     end
 end
 
+function Puzzle:getBoard()
+    return self.board
+end
+
 function Puzzle:move(direction, debug, failOnLock)
+    if failOnLock == nil then
+        failOnLock = true
+    end
     if debug == nil then
         debug = true
     end
@@ -275,7 +284,14 @@ function Puzzle:move(direction, debug, failOnLock)
         self:prettyPrint()
         print("--------------")
     end
+    table.insert(self.directions, direction.direction)
     return true
+end
+
+function Puzzle:printDirections()
+    for _, item in pairs(self.directions) do
+        print(item)
+    end
 end
 
 function Puzzle:checkWin()
