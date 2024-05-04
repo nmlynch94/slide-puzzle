@@ -112,25 +112,26 @@ function Puzzle:blankManhattan(x, y)
 end
 
 function Puzzle:lockPosition(x, y)
+    print(x .. ", " .. y)
     table.insert(self.lockedPositions, {x = x, y = y})
 end
 
 function Puzzle:unlockLatest()
+    print("Lockedpositions")
+    prettyPrint(self.lockedPositions)
     table.remove(self.lockedPositions)
 end
 
 function Puzzle:getLockedPositions()
-    print("these ones")
     return self.lockedPositions
 end
 
 function Puzzle:unlock(x, y)
-    for i = 1, #self.lockedPositions do
-        if self.lockedPositions[i].x == x and self.lockedPositions[i].y == y then
-            self.lockedPositions[i] = nil
+    for i, position in pairs(self.lockedPositions) do
+        if position.x == x and position.y == y then
+            table.remove(self.lockedPositions, i)
         end
     end
-    self.lockedPositions = {}
 end
 
 function Puzzle:clone()
@@ -146,14 +147,12 @@ function Puzzle:clone()
 
     copy.lockedPositions = self.lockedPositions
 
-    prettyPrint(copy.lockedPositions)
-
     return copy
 end
 
 function Puzzle:simulateMove(dir)
     local simPuzzle = self.clone(self)
-    local moveSuccessful = simPuzzle:move(dir)
+    local moveSuccessful = simPuzzle:move(dir, false)
     return moveSuccessful, simPuzzle
 end
 
@@ -237,13 +236,19 @@ function Puzzle:shuffle()
     end
 end
 
-function Puzzle:move(direction)
-    print("Moving....", direction.x, direction.y)
+function Puzzle:move(direction, debug, failOnLock)
+    if debug == nil then
+        debug = true
+    end
+    if debug then
+        print("Moving....", direction.x, direction.y)
 
-    self:prettyPrint()
-    print("            |")
-    print("            |")
-    print("            V")
+        self:prettyPrint()
+        print("            |")
+        print("            |")
+        print("            V")
+    end
+
     local newBlankPosition = {x = self.blankPos.x + direction.x, y = self.blankPos.y + direction.y}
     
     if newBlankPosition.x < 1 
@@ -255,7 +260,9 @@ function Puzzle:move(direction)
 
     for i = 1, #self.lockedPositions do
         if self.lockedPositions[i].x == newBlankPosition.x and self.lockedPositions[i].y == newBlankPosition.y then
-            print("LOCKED")
+            if failOnLock then
+                error("Lock encountered when we didn't expect it")
+            end
             return false
         end
     end
@@ -264,8 +271,10 @@ function Puzzle:move(direction)
     self.board[newBlankPosition.y][newBlankPosition.x] = 0
     self.blankPos = newBlankPosition
 
-    self:prettyPrint()
-    print("--------------")
+    if debug then
+        self:prettyPrint()
+        print("--------------")
+    end
     return true
 end
 
