@@ -115,6 +115,14 @@ function Puzzle:lockPosition(x, y)
     table.insert(self.lockedPositions, {x = x, y = y})
 end
 
+function Puzzle:unlockLatest()
+    table.remove(self.lockedPositions)
+end
+
+function Puzzle:unlock(x, y)
+    self.lockedPositions = {}
+end
+
 function Puzzle:clone()
     local copy = Puzzle:new(self.boardSize)  -- This sets up a new Puzzle instance with the same board size.
     for y = 1, self.boardSize do
@@ -138,6 +146,10 @@ end
 
 function Puzzle:getGoals()
     return self.goals
+end
+
+function Puzzle:setGoals(goals)
+    self.goals = goals
 end
 
 function Puzzle:generateWinningString()
@@ -185,7 +197,7 @@ function Puzzle:prettyPrint()
         for _, num in ipairs(row) do
             table.insert(formattedRow, string.format("%3d", num)) -- Adjust the width as needed (here, 3 characters)
         end
-        print("[ " .. table.concat(formattedRow, " ") .. " ]")
+        print("{ " .. table.concat(formattedRow, ", ") .. " },")
     end
 end
 
@@ -240,19 +252,22 @@ function Puzzle:checkWin()
 end
 
 -- Any objects that have an x and y property will work here e.g. {x = 1, y = 2, ...anything else}
-local function isRightOf(item1, item2)
+function isRightOf(item1, item2)
+    print("laksjdflaksjdf")
+    prettyPrint(item1)
+    prettyPrint(item2)
     return item1.x > item2.x
 end
 
-local function isLeftOf(item1, item2)
+function isLeftOf(item1, item2)
     return item1.x < item2.x
 end
 
-local function isBelow(item1, item2)
+function isBelow(item1, item2)
     return item1.y > item2.y
 end
 
-local function isAbove(item1, item2)
+function isAbove(item1, item2)
     return item1.y < item2.y
 end
 
