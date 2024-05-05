@@ -184,7 +184,6 @@ function pathBlankToPosition(puzzle, target)
     local directions = {}
 
     -- Work backwards from the path to get the full route
-    print(puzzle:serialize())
     while cur.parent ~= nil do
         table.insert(directions, cur.direction)
         cur = cur.parent
@@ -256,7 +255,6 @@ function moveAlgorithm(puzzle, direction, tilesToMove)
 
     if tilesToMove > 1 then
         for i = 1, tilesToMove - 1 do
-            print("tiles:" .. tilesToMove)
             puzzle:move(oppositeDirection, true, true)
             puzzle:move(getReturnDirection()[1], true, true)
             puzzle:move(direction, true, true)
@@ -276,8 +274,9 @@ end
 -- This function decides the number of iterations to run and which direction to return in
 -- based on the spacing available on the board.
 function moveX(puzzle, onePosition, desiredPosition, tileValue)
-    print("Starting horizontal movement")
+    print("starting horizontal movement...")
     if onePosition.x == desiredPosition.x then
+        print("no horizontal movement needed")
         return puzzle
     end
 
@@ -310,9 +309,9 @@ function moveX(puzzle, onePosition, desiredPosition, tileValue)
 end
 
 function moveY(puzzle, onePosition, desiredPosition, tileValue)
-    print("STARTING VERTICAL MOVEMENT")
+    print("starting vertical movement...")
     if onePosition.y == desiredPosition.y then
-        print("NO VERTICAL MOVEMENT NEEDED")
+        print("no vertical movement needed")
         return puzzle
     end
 
@@ -348,7 +347,7 @@ function solve(puzzle, tileValue)
     local currentPosition = puzzle:getPosition(tileValue)
     local desiredPosition = puzzle:getGoals()[tileValue]
 
-    print("SOLVING ", tileValue, "TO", desiredPosition.x, desiredPosition.y)
+    print("Moving ", tileValue, "to", desiredPosition.x, desiredPosition.y)
     
     if currentPosition.x ~= desiredPosition.x or currentPosition.y ~= desiredPosition.y then
 
@@ -488,6 +487,7 @@ local function solve3by3(puzzle)
     threeByThreePuzzle:generateWinningString()
     threeByThreePuzzle:prettyPrint()
 
+    -- Play the moves on the main puzzle so it appears in our directions logs
     local directions = idaStar(threeByThreePuzzle)
     for i = 1, #directions do
         local dir = directions[i].direction
@@ -530,23 +530,8 @@ local function solveFiveByFive(puzzle)
  
     local output = string.format("%0.6f seconds," .. #directions .. " moves in state " .. puzzle:serialize() .. " starting: " .. startingPosition, after - before)
     print(output)
-
-    local file = io.open("runs.log", "a")
-
-    -- Check if the file was successfully opened
-    if file then
-        -- Write the multiline string to the file
-        file:write(output, "\n")
-        
-        -- Close the file
-        file:close()
-    else
-        print("Failed to open the file.")
-    end
 end
 
-while true do
-    local puzz = Puzzle:new(5)
-    puzz:shuffle()
-    solveFiveByFive(puzz)
-end
+local puzz = Puzzle:new(5)
+puzz:shuffle()
+solveFiveByFive(puzz)
