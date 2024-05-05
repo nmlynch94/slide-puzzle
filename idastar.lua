@@ -427,7 +427,7 @@ while true do
 
     local value = 5
     local location = puzzle:getPosition(value)
-    if location.y == 1 or (location.x > 4 and location.y < 3) then
+    if location.y == 1 or (location.x > 3 and location.y < 3) then
         print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
         local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
         local priorGoal = puzzle:getGoals()[value]
