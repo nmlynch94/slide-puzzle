@@ -1,4 +1,5 @@
 require('util')
+require('idastar')
 
 math.randomseed(os.time())
 
@@ -61,7 +62,6 @@ function Puzzle:new(boardSize, initialState)
         instance.board = initialState
     end
 
-    
     return instance
 end
 
@@ -176,6 +176,18 @@ function Puzzle:serialize()
     return table.concat(stateArray, "-")
 end
 
+function Puzzle:solve()
+    -- solving a 5x5 is not feasible with ida* alone
+    local directions
+    if self.boardSize == 5 then
+        directions = solveFiveByFive(self)
+    else
+        directions = idaStar(self)
+    end
+
+    return directions
+end
+
 -- 2d array print for easier verification in logs
 function Puzzle:prettyPrint()
     for iy = 1, self.boardSize do
@@ -276,9 +288,13 @@ function Puzzle:move(direction, debug, failOnLock, record)
         print("--------------")
     end
     if record then
-        table.insert(self.directions, {direction = direction.direction, state = self:clone()})
+        table.insert(self.directions, {direction = direction.direction})
     end
     return true
+end
+
+function Puzzle:removeLocks()
+    self.lockedPositions = {}
 end
 
 function Puzzle:printDirections()

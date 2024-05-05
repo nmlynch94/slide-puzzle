@@ -61,3 +61,11 @@ end
 function isAbove(item1, item2)
     return item1.y < item2.y
 end
+
+function map(tbl, f)
+    local t = {}
+    for k,v in pairs(tbl) do
+        t[k] = f(v)
+    end
+    return t
+end

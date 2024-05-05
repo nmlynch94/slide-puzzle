@@ -1,5 +1,4 @@
 require("util")
-local Puzzle = require("Puzzle")
 
 function deepcopy(orig)
     local orig_type = type(orig)
@@ -69,7 +68,7 @@ local function search(path, g, bound, dirs)
     return min
 end
 
-local function idaStar(puzzle)
+function idaStar(puzzle)
     if puzzle:checkWin() then
         return {}
     end
@@ -397,7 +396,7 @@ local function solveEdge(puzzle, tileValueOne, tileValueTwo)
 
     local location = puzzle:getPosition(tileValueTwo)
     local needToMoveOutOfTheWay = false
-    if (solvingHorizontalEdge and location.x > 3 and location.y < 3) or (not solvingHorizontalEdge and location.y > 3 and location.x < 3) then needToMoveOutOfTheWay = true end
+    if (solvingHorizontalEdge and location.x > 3 and location.y < 4) or (not solvingHorizontalEdge and location.y > 3 and location.x < 4) then needToMoveOutOfTheWay = true end
     
     -- There are cases where the blank can get caught between two locked tiles
     -- This is to move the tile out of the way first as a lazy way to avoid it
@@ -454,7 +453,7 @@ local function solveEdge(puzzle, tileValueOne, tileValueTwo)
     return puzzle
 end
 
-local function solve3by3(puzzle)
+local function solve3by3(puzzle, boardSize)
     -- Map the appropriate 5x5 values to corresponding 3x3 values
     local fiveByFiveToThreeByThreeMap = {}
     fiveByFiveToThreeByThreeMap[13] = 1
@@ -466,6 +465,10 @@ local function solve3by3(puzzle)
     fiveByFiveToThreeByThreeMap[23] = 7
     fiveByFiveToThreeByThreeMap[24] = 8
     fiveByFiveToThreeByThreeMap[0] = 0
+
+    local valueMap = fiveByFiveToThreeByThreeMap
+
+    if boardSize == 4 then valueMap = fourByFourToThreeByThreeMap end
 
     local threeByThree = {}
     for i = 1, 3 do
@@ -479,11 +482,11 @@ local function solve3by3(puzzle)
     local board = puzzle:getBoard()
     for iy = 3, #board do
         for ix = 3, #board[iy] do
-            threeByThree[iy - 2][ix - 2] = fiveByFiveToThreeByThreeMap[board[iy][ix]]
+            threeByThree[iy - 2][ix - 2] = valueMap[board[iy][ix]]
         end
     end
 
-    local threeByThreePuzzle = Puzzle:new(3, threeByThree)
+    local threeByThreePuzzle = puzzle:new(3, threeByThree)
     threeByThreePuzzle:generateWinningString()
     threeByThreePuzzle:prettyPrint()
 
@@ -504,7 +507,7 @@ local function solve3by3(puzzle)
     return puzzle
 end
 
-local function solveFiveByFive(puzzle)
+function solveFiveByFive(puzzle)
     local before = os.clock()
     puzzle:generateWinningString() -- make sure the winning string is generated
     local startingPosition = puzzle:serialize()
@@ -529,9 +532,6 @@ local function solveFiveByFive(puzzle)
     local after = os.clock()
  
     local output = string.format("%0.6f seconds," .. #directions .. " moves in state " .. puzzle:serialize() .. " starting: " .. startingPosition, after - before)
-    print(output)
-end
 
-local puzz = Puzzle:new(5)
-puzz:shuffle()
-solveFiveByFive(puzz)
+    return directions
+end
