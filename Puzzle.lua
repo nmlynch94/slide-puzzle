@@ -127,6 +127,20 @@ function Puzzle:getLockedPositions()
     return self.lockedPositions
 end
 
+function Puzzle:lockByValue(tileValue)
+    local position = self:getPosition(tileValue)
+    table.insert(self.lockedPositions, {x = position.x, y = position.y})
+end
+
+function Puzzle:unlockByValue(tileValue)
+    local tilePosition = self:getPosition(tileValue)
+    for i, position in pairs(self.lockedPositions) do
+        if tilePosition.x == position.x and tilePosition.y == position.y then
+            table.remove(self.lockedPositions, i)
+        end
+    end
+end
+
 function Puzzle:unlock(x, y)
     for i, position in pairs(self.lockedPositions) do
         if position.x == x and position.y == y then
@@ -236,6 +250,10 @@ function Puzzle:shuffle()
         local direction = DIRECTIONS[randomIndex]
         self:move(direction, false, false, false)
     end
+end
+
+function Puzzle:updateGoal(tile, newPosition)
+    self.goals[tile] = {x = newPosition.x, y = newPosition.y}
 end
 
 function Puzzle:getBoard()
