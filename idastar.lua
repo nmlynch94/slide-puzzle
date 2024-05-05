@@ -40,7 +40,7 @@ local function search(path, g, bound, dirs)
     local min = INF
 
     for i, dir in ipairs(DIRECTIONS) do
-        if #dirs > 0 and -dir[1] == dirs[#dirs][1] and -dirs[#dirs][2] == -dir[2] then
+        if #dirs > 0 and -dir.y == dirs[#dirs].y and -dirs[#dirs].x == -dir.x then
             goto continue
         end
         local validMove, simPuzzle = cur:simulateMove(dir)        
@@ -167,6 +167,7 @@ function pathBlankToPosition(puzzle, target)
     local directions = {}
 
     -- Use the parent to get the whole path
+    print(puzzle:serialize())
     while cur.parent ~= nil do
         table.insert(directions, cur.direction)
         cur = cur.parent
@@ -322,7 +323,7 @@ function moveY(puzzle, onePosition, desiredPosition, tileValue)
     return puzzle
 end
 
-function solve(puzzle, onePosition, desiredPosition, tileValue, horizontalMovementFirst)
+function solve(puzzle, onePosition, desiredPosition, tileValue)
 
     print("SOLVING ", tileValue, "TO", desiredPosition.x, desiredPosition.y)
     puzzle:prettyPrint()
@@ -330,7 +331,7 @@ function solve(puzzle, onePosition, desiredPosition, tileValue, horizontalMoveme
     if onePosition.x ~= desiredPosition.x or onePosition.y ~= desiredPosition.y then
 
         local horizontalMovementFirst
-        if desiredPosition.x <= 2 then
+        if desiredPosition.x <= 2 and desiredPosition.y > 2 then
             horizontalMovementFirst = false
         else
             horizontalMovementFirst = true
@@ -387,24 +388,31 @@ local state = {
     {  22,  20,  12,   3,  13 },
 }
 
+local state = {
+    {  12,   5,   4,  16,  13 },
+    {  20,  22,  18,  11,  15 },
+    {   0,   2,   1,   3,   7 },
+    {  14,  21,  17,   8,  19 },
+    {  24,  10,  23,   9,   6 },   
+}
 
-local puzzle = Puzzle:new(5, state)
+local before = os.clock()
+local puzzle = Puzzle:new(5)
 puzzle:generateWinningString()
 puzzle:shuffle()
-
-print("Starting position")
+local startingPosition = puzzle:serialize()
 puzzle:prettyPrint()
 
 -- prettyPrint(puzzle:getLockedPositions())
 puzzle:prettyPrint()
 local puzzle = solve(puzzle, puzzle:getPosition(1), puzzle:getGoals()[1], 1)
+
 puzzle = solve(puzzle, puzzle:getPosition(2), puzzle:getGoals()[2], 2)
+
 prettyPrint(puzzle:getLockedPositions())
-puzzle:prettyPrint()
 
 puzzle = solve(puzzle, puzzle:getPosition(3), puzzle:getGoals()[3], 3)
 prettyPrint(puzzle:getLockedPositions())
-puzzle:prettyPrint()
 
 -- Switch to a modified goals state so that we place the 4 and 5 in a specific way to solve them (for a 5x5 puzzle, but this example applies for all sizes). The location of those two tiles is all that matters
 local newGoals = puzzle:getGoals()
@@ -437,7 +445,6 @@ puzzle:prettyPrint()
 -- Get the directions to move the 0 to x = boardSize - 1, and y = 1 to move the 4 and 5 (in a 5x5) into place
 local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 1})
 puzzle = movedPuzzle
-print("STARTINGqqq")
 puzzle:prettyPrint()
 prettyPrint(puzzle:getLockedPositions())
 
@@ -460,7 +467,6 @@ newGoals[puzzle:getBoardSize() * 4 + 1] = {y = puzzle:getBoardSize(), x = 2}
 local value = 21
 local location = puzzle:getPosition(value)
 if location.x == 1 then
-    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
     local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
     local priorGoal = puzzle:getGoals()[value]
     -- change goal so we can move the 5 out of the way
@@ -480,6 +486,7 @@ puzzle = movedPuzzle
 
 puzzle:unlock(1, puzzle:getBoardSize())
 puzzle:unlock(2, puzzle:getBoardSize())
+
 puzzle:move(DOWN, true, true)
 puzzle:move(RIGHT, true, true)
 puzzle:lockPosition(1, puzzle:getBoardSize() - 1)
@@ -556,44 +563,56 @@ puzzle:lockPosition(2, puzzle:getBoardSize())
 puzzle:lockPosition(2, puzzle:getBoardSize())
 puzzle:prettyPrint()
 
-new_array = {}
+local fiveByFiveToThreeByThreeMap = {}
+fiveByFiveToThreeByThreeMap[13] = 1
+fiveByFiveToThreeByThreeMap[14] = 2
+fiveByFiveToThreeByThreeMap[15] = 3
+fiveByFiveToThreeByThreeMap[18] = 4
+fiveByFiveToThreeByThreeMap[19] = 5
+fiveByFiveToThreeByThreeMap[20] = 6
+fiveByFiveToThreeByThreeMap[23] = 7
+fiveByFiveToThreeByThreeMap[24] = 8
+fiveByFiveToThreeByThreeMap[0] = 0
+
+local threeByThree = {}
 for i = 1, 3 do
-    new_array[i] = {}
+    table.insert(threeByThree, {})
     for j = 1, 3 do
-        new_array[i][j] = 0
+        table.insert(threeByThree[i], 0)
     end
 end
 
-local original_array = puzzle:getBoard()
--- Map and fill the new array
-for i = 1, 3 do
-    for j = 1, 3 do
-        if original_array[2+i][2+j] == 0 then
-            new_array[i][j] = 9  -- Map 0 to 9
-        else
-            new_array[i][j] = original_array[2+i][2+j]
-        end
+
+local board = puzzle:getBoard()
+for iy = 3, #board do
+    for ix = 3, #board[iy] do
+        threeByThree[iy - 2][ix - 2] = fiveByFiveToThreeByThreeMap[board[iy][ix]]
     end
 end
 
--- Print the new 3x3 array
-for i = 1, 3 do
-    for j = 1, 3 do
-        io.write(new_array[i][j], " ")
+local threeByThreePuzzle = Puzzle:new(3, threeByThree)
+threeByThreePuzzle:generateWinningString()
+threeByThreePuzzle:prettyPrint()
+
+local directions = idaStar(threeByThreePuzzle)
+for i = 1, #directions do
+    local dir = directions[i].direction
+    if dir == "LEFT" then
+        puzzle:move(LEFT)
+    elseif dir == "RIGHT" then
+        puzzle:move(RIGHT)
+    elseif dir == "UP" then
+        puzzle:move(UP)
+    elseif dir == "DOWN" then
+        puzzle:move(DOWN)
     end
-    print()
 end
 
+local directions = puzzle:getDirections()
 
-
-
-
-
-
-
-
-
-
+local after = os.clock()
+print(string.format("Loop took %0.6f seconds to run in " .. #directions .. " moves in state " .. puzzle:serialize() .. " starting: " .. startingPosition, after - before))
+assert(puzzle:serialize() == "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-0")
 
 
 

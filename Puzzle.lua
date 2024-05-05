@@ -154,7 +154,7 @@ end
 
 function Puzzle:simulateMove(dir)
     local simPuzzle = self.clone(self)
-    local moveSuccessful = simPuzzle:move(dir, false, false)
+    local moveSuccessful = simPuzzle:move(dir, false, false, false)
     return moveSuccessful, simPuzzle
 end
 
@@ -234,7 +234,7 @@ function Puzzle:shuffle()
     for i = 1, nShuffles, 1 do
         local randomIndex = math.random(1, #DIRECTIONS)
         local direction = DIRECTIONS[randomIndex]
-        self:move(direction)
+        self:move(direction, false, false, false)
     end
 end
 
@@ -242,7 +242,10 @@ function Puzzle:getBoard()
     return self.board
 end
 
-function Puzzle:move(direction, debug, failOnLock)
+function Puzzle:move(direction, debug, failOnLock, record)
+    if record == nil then
+        record = true
+    end
     if failOnLock == nil then
         failOnLock = true
     end
@@ -284,14 +287,20 @@ function Puzzle:move(direction, debug, failOnLock)
         self:prettyPrint()
         print("--------------")
     end
-    table.insert(self.directions, direction.direction)
+    if record then
+        table.insert(self.directions, {direction = direction.direction, state = self:clone()})
+    end
     return true
 end
 
 function Puzzle:printDirections()
-    for _, item in pairs(self.directions) do
-        print(item)
+    for  i = 1, #self.directions do
+        print(self.directions[i].direction)
     end
+end
+
+function Puzzle:getDirections()
+    return self.directions
 end
 
 function Puzzle:checkWin()
