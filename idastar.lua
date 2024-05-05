@@ -1,4 +1,4 @@
-require("util")
+require("uitl")
 local Puzzle = require("Puzzle")
 
 function deepcopy(orig)
@@ -88,6 +88,12 @@ local function idaStar(puzzle)
     end
 end
 
+-- This function recursively enumerates all position states within 10 moves from the current
+-- location of the blank tile. This then sorts the resulting set by h, g to find the shortest
+-- path to the desired tile while avoiding locked positions in the puzzle
+
+-- This method is feasible for moving the blank tile to one location due to the size of the space being searched,
+-- but will not work for the full puzzle due to the number of available states for a 5x5
 function pathBlankToPosition(puzzle, target)
     local originalPuzzle = puzzle:clone()
 
@@ -96,6 +102,7 @@ function pathBlankToPosition(puzzle, target)
     local function searchBruceForce(path, closedPaths, target, bound, g)
         local newMoves = {}
 
+        -- Find all valid moves that have not been explored in the past
         if path:getPosition(0).x > 1 then 
             local validMove, newMove = path:simulateMove(LEFT)
             if validMove == true and closedPaths[newMove:serialize()] == nil then
@@ -129,12 +136,20 @@ function pathBlankToPosition(puzzle, target)
             end
         end
 
+        -- search the lowest heuristic values first
         table.sort(newMoves, function (a, b) 
             return a.h < b.h
         end)
+
+        -- If no newMoves exist, we are at a dead end
+        -- If g is greater than bound, return to avoid ballooning the state we store
         if #newMoves == 0 or g > bound then
             return
         end
+
+        -- For all new moves found, set a key on the table with the serialized puzzle value so we can easily find it in the future
+        -- Add the valid newMoves to the overall list of paths to sort at the end.
+        -- Call this function again on all valid states found
         for i = 1, #newMoves do
             closedPaths[newMoves[i].puzzle:serialize()] = "OCCUPIED"
             paths[#paths + 1] = newMoves[i]
@@ -145,14 +160,15 @@ function pathBlankToPosition(puzzle, target)
         end
     end
 
-    local target = target
-
     local closedPaths = {}
+    local bound = 10 -- We should be able to get anywhere we need on the board within 10 moves, so bound each path to that size
+    local startingG = 0
     closedPaths[puzzle:serialize()] = "OCCUPIED"
     if puzzle:getHeuristic() > 0 then
-        searchBruceForce(puzzle:clone(), closedPaths, target, 10, 0)
+        searchBruceForce(puzzle:clone(), closedPaths, target, bound, startingG)
     end
 
+    -- sort all located paths by h, g
     table.sort(paths, function(a, b)
         if a.h ~= b.h then
             return a.h < b.h
@@ -162,10 +178,12 @@ function pathBlankToPosition(puzzle, target)
     end)
 
     -- Print directions in reverse order
+    -- We are grabbing from paths[1] since we sorted by h, g
+    -- This should be a path with h = 0 and lowest g as possible
     local cur = paths[1]
     local directions = {}
 
-    -- Use the parent to get the whole path
+    -- Work backwards from the path to get the full route
     print(puzzle:serialize())
     while cur.parent ~= nil do
         table.insert(directions, cur.direction)
@@ -175,6 +193,7 @@ function pathBlankToPosition(puzzle, target)
         table.insert(directions, cur.direction)
     end
 
+    -- Play all the moves on the main puzzle so they end up in the solution directions array
     for i = #directions, 1, -1 do
         local dir = directions[i]
         if dir == "LEFT" then
@@ -187,6 +206,7 @@ function pathBlankToPosition(puzzle, target)
             originalPuzzle:move(DOWN)
         end
     end
+
     return directions, originalPuzzle
 end
 
@@ -249,34 +269,37 @@ function moveAlgorithm(puzzle, direction, tilesToMove)
     end
 end
 
+
+-- Algorithm to move a tile sideways.
+-- For example, if we want to move the tile to the right of the blank tile left,
+-- then we run right, down, left, left, up
+-- This function decides the number of iterations to run and which direction to return in
+-- based on the spacing available on the board.
 function moveX(puzzle, onePosition, desiredPosition, tileValue)
-    print("STARTING HORIZONTAL MOVEMENT")
+    print("Starting horizontal movement")
     if onePosition.x == desiredPosition.x then
-        print("NO HORIZONTAL MOVEMENT NEEDED")
         return puzzle
     end
 
+    -- Lock the tile we are pathing relative to so that we don't move it on the way
+    -- to the target position and mess up our subsequent path finding algorithm
+    puzzle:lockByValue(tileValue)
     if isRightOf(onePosition, desiredPosition) then
-        puzzle:lockPosition(onePosition.x, onePosition.y)
-        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x - 1, y = onePosition.y})
-        puzz:unlockLatest()
+        local _, puzz = pathBlankToPosition(puzzle, {x = onePosition.x - 1, y = onePosition.y})
         puzzle = puzz
     else
-        puzzle:lockPosition(onePosition.x, onePosition.y)
-        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x + 1, y = onePosition.y})
-        puzz:unlockLatest()
+        local _, puzz = pathBlankToPosition(puzzle, {x = onePosition.x + 1, y = onePosition.y})
         puzzle = puzz
     end
+    puzzle:unlockByValue(tileValue)
 
     local onePosition = puzzle:getPosition(tileValue);
     local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
     local horizontalDirection
     if isRightOf(onePosition, desiredPosition) then
         horizontalDirection = LEFT
-        print("ITLEFT")
     else
         horizontalDirection = RIGHT
-        print("ITRIGHT")
     end
     
 
@@ -293,27 +316,25 @@ function moveY(puzzle, onePosition, desiredPosition, tileValue)
         return puzzle
     end
 
+    -- Lock the tile we are pathing relative to so that we don't move it on the way
+    -- to the target position and mess up our subsequent path finding algorithm
+    puzzle:lockByValue(tileValue)
     if isAbove(onePosition, desiredPosition) then
-        puzzle:lockPosition(onePosition.x, onePosition.y)
-        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y + 1})
-        puzz:unlockLatest()
+        local _, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y + 1})
         puzzle = puzz
     else
-        puzzle:lockPosition(onePosition.x, onePosition.y)
-        local dir, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y - 1})
-        puzz:unlockLatest()
+        local _, puzz = pathBlankToPosition(puzzle, {x = onePosition.x, y = onePosition.y - 1})
         puzzle = puzz    
     end
+    puzzle:unlockByValue(tileValue)
 
     local onePosition = puzzle:getPosition(tileValue);
     local desiredPosition = puzzle:getGoals(tileValue)[tileValue]
     local verticalDirection
     if isAbove(onePosition, desiredPosition) then
         verticalDirection = DOWN
-        print("ITUP")
     else
         verticalDirection = UP
-        print("ITDOWN")
     end
 
     local tilesToMove = math.abs(onePosition.y - desiredPosition.y)
@@ -328,8 +349,6 @@ function solve(puzzle, tileValue)
     local desiredPosition = puzzle:getGoals()[tileValue]
 
     print("SOLVING ", tileValue, "TO", desiredPosition.x, desiredPosition.y)
-
-    puzzle:prettyPrint()
     
     if currentPosition.x ~= desiredPosition.x or currentPosition.y ~= desiredPosition.y then
 
@@ -363,11 +382,12 @@ function solve(puzzle, tileValue)
         end
     
     end
-    print("tile value: " .. tileValue)
-    puzzle:lockPosition(desiredPosition.x, desiredPosition.y)
+    -- Once we solve the value, lock it so it can't move
+    puzzle:lockByValue(tileValue)
     return puzzle
 end
 
+-- When solving cols n, or n - 1 they need to be placed in a specific way first. This function achieves that and also addresses some edge cases https://www.kopf.com.br/kaplof/how-to-solve-any-slide-puzzle-regardless-of-its-size/
 local function solveEdge(puzzle, tileValueOne, tileValueTwo)
     -- Switch to a modified goals state so that we place the 4 and 5 in a specific way to solve them (for a 5x5 puzzle, but this example applies for all sizes). The location of those two tiles is all that matters
     local currentGoalPositionTileOne = puzzle:clone():getGoals()[tileValueOne]
@@ -379,6 +399,9 @@ local function solveEdge(puzzle, tileValueOne, tileValueTwo)
     local location = puzzle:getPosition(tileValueTwo)
     local needToMoveOutOfTheWay = false
     if (solvingHorizontalEdge and location.x > 3 and location.y < 3) or (not solvingHorizontalEdge and location.y > 3 and location.x < 3) then needToMoveOutOfTheWay = true end
+    
+    -- There are cases where the blank can get caught between two locked tiles
+    -- This is to move the tile out of the way first as a lazy way to avoid it
     if needToMoveOutOfTheWay then
         print("Need to move " .. tileValueTwo .. " out of the way")
         local xModifier = 0

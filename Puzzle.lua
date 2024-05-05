@@ -1,5 +1,8 @@
+require('util')
+
 math.randomseed(os.time())
 
+-- constants
 INF = 100000
 
 UP = {y = -1, x = 0, direction = "UP"}
@@ -9,52 +12,7 @@ RIGHT = {y = 0, x = 1, direction = "RIGHT"}
 
 DIRECTIONS = {UP, DOWN, LEFT, RIGHT}
 
-function prettyPrint(t, indent, done)
-    done = done or {}
-    indent = indent or 0
-    local keys = {}
-
-    local function basicSerialize(o)
-        if type(o) == "number" then
-            return tostring(o)
-        elseif type(o) == "boolean" then
-            return tostring(o)
-        else -- assume it is a string
-            return string.format("%q", o)
-        end
-    end
-
-    for k, v in pairs(t) do
-        table.insert(keys, k)
-    end
-    table.sort(keys, function(a, b)
-        if type(a) == type(b) then
-            return a < b
-        else
-            return type(a) < type(b)
-        end
-    end)
-
-    for i, k in ipairs(keys) do
-        local v = t[k]
-        local formatting = string.rep("  ", indent) .. k .. ": "
-        if type(v) == "table" then
-            if done[v] then
-                print(formatting .. tostring(v) .. " [circular reference]")
-            else
-                done[v] = true
-                print(formatting)
-                prettyPrint(v, indent + 1, done)
-                done[v] = nil -- Allow reuse in other tables
-            end
-        else
-            print(formatting .. basicSerialize(v))
-        end
-    end
-end
-
 local Puzzle = {}
-local winningPuzzleString
 
 function Puzzle:new(boardSize, initialState)
     local instance = {}
@@ -65,7 +23,7 @@ function Puzzle:new(boardSize, initialState)
     instance.blankPos = {x = boardSize, y = boardSize}
     instance.directions = {}
 
-    -- get the blank position from the initial state
+    -- set blank position from the given initial state
     if initialState ~= nil then
         for iy = 1, #initialState do
             local row = initialState[iy]
@@ -82,6 +40,7 @@ function Puzzle:new(boardSize, initialState)
 
     instance.lockedPositions = {}
 
+    -- Generate a reverse index to make finding desired position by value easier in the heuristic check
     -- Generate a board first in a solved state so we can create a reverse-index
     for y = 1, boardSize do
         table.insert(instance.board, {})
@@ -90,7 +49,6 @@ function Puzzle:new(boardSize, initialState)
         end
     end
 
-    -- Reverse index to make finding desired position by value easier in the heuristic check
     instance.goals = {}
     for iy, row in ipairs(instance.board) do
         for ix, col in pairs(row) do
@@ -98,6 +56,7 @@ function Puzzle:new(boardSize, initialState)
         end
     end
 
+    -- Override the default solved state with the initial state provided
     if initialState ~= nil then
         instance.board = initialState
     end
@@ -106,15 +65,11 @@ function Puzzle:new(boardSize, initialState)
     return instance
 end
 
+-- Find manhattan distance for the blank tile compared to a given position
 function Puzzle:blankManhattan(x, y)
     local blankPosition = self.getPosition(self, 0)
     local manhattanDistance = math.abs(blankPosition.x - x) + math.abs(blankPosition.y - y)
     return manhattanDistance
-end
-
-function Puzzle:lockPosition(x, y)
-    print(x .. ", " .. y)
-    table.insert(self.lockedPositions, {x = x, y = y})
 end
 
 function Puzzle:unlockLatest()
@@ -149,6 +104,9 @@ function Puzzle:unlock(x, y)
     end
 end
 
+-- Lua passes by reference, so we use this to 
+-- clone separate puzzle objects that we can simulate moves on
+-- without modifying the original state
 function Puzzle:clone()
     local copy = Puzzle:new(self.boardSize)  -- This sets up a new Puzzle instance with the same board size.
     for y = 1, self.boardSize do
@@ -166,6 +124,7 @@ function Puzzle:clone()
     return copy
 end
 
+-- Perform a move on a cloned state so we can analyze the output position
 function Puzzle:simulateMove(dir)
     local simPuzzle = self.clone(self)
     local moveSuccessful = simPuzzle:move(dir, false, false, false)
@@ -176,10 +135,8 @@ function Puzzle:getGoals()
     return self.goals
 end
 
-function Puzzle:setGoals(goals)
-    self.goals = goals
-end
-
+-- Generate a winning string we can easily check against once our
+-- path finding is complete
 function Puzzle:generateWinningString()
     local tempBoard = {}
     for y = 1, self.boardSize do
@@ -208,6 +165,7 @@ function Puzzle:getBoardSize()
     return self.boardSize
 end
 
+-- Convert a 2d array into a one-line string separated by '-'
 function Puzzle:serialize() 
     local stateArray = {}
     for y = 1, self.boardSize do
@@ -218,6 +176,7 @@ function Puzzle:serialize()
     return table.concat(stateArray, "-")
 end
 
+-- 2d array print for easier verification in logs
 function Puzzle:prettyPrint()
     for iy = 1, self.boardSize do
         local row = self.board[iy]
@@ -243,6 +202,7 @@ function Puzzle:getPosition(value)
     end
 end
 
+-- Add a way to shuffle so we can generate solvable puzzles easily by shuffling from a solved state
 function Puzzle:shuffle()
     local nShuffles = 1000
     for i = 1, nShuffles, 1 do
@@ -252,6 +212,9 @@ function Puzzle:shuffle()
     end
 end
 
+-- Allow is to update the goal position for a specific tile. This is 
+-- To allow us to move a tile to something aside from the solved state
+-- temporarily like we do to deal with some edge cases.
 function Puzzle:updateGoal(tile, newPosition)
     self.goals[tile] = {x = newPosition.x, y = newPosition.y}
 end
@@ -260,6 +223,13 @@ function Puzzle:getBoard()
     return self.board
 end
 
+-- Move the blank tile in a direction.
+-- failOnLock controls if we should fail if we encounter a locked tile
+-- We use this mainly for moveAlgorithm because it's a dumb function that is 
+-- performing movements assuming no locked tiles are in the way.
+
+-- record controls if this should be added to the move history for this puzzle
+-- This is so we can avoid recording simulated moves or shuffling the puzzle
 function Puzzle:move(direction, debug, failOnLock, record)
     if record == nil then
         record = true
@@ -323,23 +293,6 @@ end
 
 function Puzzle:checkWin()
     return self.serialize(self) == self.winningPuzzleString
-end
-
--- Any objects that have an x and y property will work here e.g. {x = 1, y = 2, ...anything else}
-function isRightOf(item1, item2)
-    return item1.x > item2.x
-end
-
-function isLeftOf(item1, item2)
-    return item1.x < item2.x
-end
-
-function isBelow(item1, item2)
-    return item1.y > item2.y
-end
-
-function isAbove(item1, item2)
-    return item1.y < item2.y
 end
 
 function Puzzle:getHeuristic()
