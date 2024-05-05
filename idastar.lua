@@ -1,4 +1,4 @@
-require("uitl")
+require("util")
 local Puzzle = require("Puzzle")
 
 function deepcopy(orig)
