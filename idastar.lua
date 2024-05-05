@@ -389,231 +389,255 @@ local state = {
 }
 
 local state = {
-    {  12,   5,   4,  16,  13 },
-    {  20,  22,  18,  11,  15 },
-    {   0,   2,   1,   3,   7 },
-    {  14,  21,  17,   8,  19 },
-    {  24,  10,  23,   9,   6 },   
+    {   1,   2,   3,   4,   5 },
+    {   6,   7,   8,   9,  10 },
+    {  11,   0,  19,  14,  18 },
+    {  16,  12,  22,  20,  13 },
+    {  21,  17,  15,  23,  24 },
 }
 
-local before = os.clock()
-local puzzle = Puzzle:new(5)
-puzzle:generateWinningString()
-puzzle:shuffle()
-local startingPosition = puzzle:serialize()
-puzzle:prettyPrint()
+local runs = 0
+local totalMoves = 0
+local totalTime = 0
 
--- prettyPrint(puzzle:getLockedPositions())
-puzzle:prettyPrint()
-local puzzle = solve(puzzle, puzzle:getPosition(1), puzzle:getGoals()[1], 1)
+while true do
+    local before = os.clock()
+    local puzzle = Puzzle:new(5)
+    puzzle:generateWinningString()
+    puzzle:shuffle()
+    local startingPosition = puzzle:serialize()
+    puzzle:prettyPrint()
 
-puzzle = solve(puzzle, puzzle:getPosition(2), puzzle:getGoals()[2], 2)
+    -- prettyPrint(puzzle:getLockedPositions())
+    puzzle:prettyPrint()
+    local puzzle = solve(puzzle, puzzle:getPosition(1), puzzle:getGoals()[1], 1)
 
-prettyPrint(puzzle:getLockedPositions())
+    puzzle = solve(puzzle, puzzle:getPosition(2), puzzle:getGoals()[2], 2)
 
-puzzle = solve(puzzle, puzzle:getPosition(3), puzzle:getGoals()[3], 3)
-prettyPrint(puzzle:getLockedPositions())
+    prettyPrint(puzzle:getLockedPositions())
 
--- Switch to a modified goals state so that we place the 4 and 5 in a specific way to solve them (for a 5x5 puzzle, but this example applies for all sizes). The location of those two tiles is all that matters
-local newGoals = puzzle:getGoals()
--- This is modifying the goals table so that our algorithm 
-newGoals[puzzle:getBoardSize() - 1] = {y = 1, x = puzzle:getBoardSize()}
-newGoals[puzzle:getBoardSize()] = {y = 2, x = puzzle:getBoardSize()}
+    puzzle = solve(puzzle, puzzle:getPosition(3), puzzle:getGoals()[3], 3)
+    prettyPrint(puzzle:getLockedPositions())
 
-local value = 5
-local location = puzzle:getPosition(value)
-if location.y == 1 then
-    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
-    local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
-    local priorGoal = puzzle:getGoals()[value]
-    -- change goal so we can move the 5 out of the way
-    newGoals[value] = newLocation
-    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
-    -- fix goal position back to normal
-    newGoals[value] = priorGoal
-    -- remove the lock that gets placed
-    puzzle:unlock(newLocation.x, newLocation.y)
-end
+    -- Switch to a modified goals state so that we place the 4 and 5 in a specific way to solve them (for a 5x5 puzzle, but this example applies for all sizes). The location of those two tiles is all that matters
+    local newGoals = puzzle:getGoals()
+    -- This is modifying the goals table so that our algorithm 
+    newGoals[puzzle:getBoardSize() - 1] = {y = 1, x = puzzle:getBoardSize()}
+    newGoals[puzzle:getBoardSize()] = {y = 2, x = puzzle:getBoardSize()}
 
-puzzle = solve(puzzle, puzzle:getPosition(4), puzzle:getGoals()[4], 4)
--- prettyPrint(puzzle:getLockedPositions())
-puzzle:prettyPrint()
-puzzle = solve(puzzle, puzzle:getPosition(5), puzzle:getGoals()[5], 5)
--- prettyPrint(puzzle:getLockedPositions())
-puzzle:prettyPrint()
-
--- Get the directions to move the 0 to x = boardSize - 1, and y = 1 to move the 4 and 5 (in a 5x5) into place
-local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 1})
-puzzle = movedPuzzle
-puzzle:prettyPrint()
-prettyPrint(puzzle:getLockedPositions())
-
-puzzle:unlock(puzzle:getBoardSize(), 1)
-puzzle:unlock(puzzle:getBoardSize(), 2)
-puzzle:move(RIGHT, false, true)
-puzzle:move(DOWN, false, true)
-puzzle:lockPosition(puzzle:getBoardSize() - 1, 1)
-puzzle:lockPosition(puzzle:getBoardSize(), 1)
-
-puzzle = solve(puzzle, puzzle:getPosition(6), puzzle:getGoals()[6], 6)
--- print("11!!!!")
-
-puzzle = solve(puzzle, puzzle:getPosition(11), puzzle:getGoals()[11], 11)
-
--- This is modifying the goals table so that our algorithm paths to the right spot
-newGoals[puzzle:getBoardSize() * 3 + 1] = {y = puzzle:getBoardSize(), x = 1}
-newGoals[puzzle:getBoardSize() * 4 + 1] = {y = puzzle:getBoardSize(), x = 2}
-
-local value = 21
-local location = puzzle:getPosition(value)
-if location.x == 1 then
-    local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
-    local priorGoal = puzzle:getGoals()[value]
-    -- change goal so we can move the 5 out of the way
-    newGoals[value] = newLocation
-    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
-    -- fix goal position back to normal
-    newGoals[value] = priorGoal
-    -- remove the lock that gets placed
-    puzzle:unlock(newLocation.x, newLocation.y)
-end
-
-puzzle = solve(puzzle, puzzle:getPosition(16), puzzle:getGoals()[16], 16)
-puzzle = solve(puzzle, puzzle:getPosition(21), puzzle:getGoals()[21], 21)
-
-local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = 1, y = puzzle:getBoardSize() - 1})
-puzzle = movedPuzzle
-
-puzzle:unlock(1, puzzle:getBoardSize())
-puzzle:unlock(2, puzzle:getBoardSize())
-
-puzzle:move(DOWN, true, true)
-puzzle:move(RIGHT, true, true)
-puzzle:lockPosition(1, puzzle:getBoardSize() - 1)
-puzzle:lockPosition(1, puzzle:getBoardSize())
-
-puzzle = solve(puzzle, puzzle:getPosition(7), puzzle:getGoals()[7], 7)
-puzzle = solve(puzzle, puzzle:getPosition(8), puzzle:getGoals()[8], 8)
-
-local value = 10
-local location = puzzle:getPosition(value)
-if location.y == 2 then
-    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
-    local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
-    local priorGoal = puzzle:getGoals()[value]
-    -- change goal so we can move the 5 out of the way
-    newGoals[value] = newLocation
-    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
-    -- fix goal position back to normal
-    newGoals[value] = priorGoal
-    -- remove the lock that gets placed
-    puzzle:unlock(newLocation.x, newLocation.y)
-end
-
--- This is modifying the goals table so that our algorithm paths to the right spot
-newGoals[puzzle:getBoardSize() * 2 -1] = {y = 2, x = puzzle:getBoardSize()}
-newGoals[puzzle:getBoardSize() * 2] = {y = 3, x = puzzle:getBoardSize()}
-
-puzzle = solve(puzzle, puzzle:getPosition(9), puzzle:getGoals()[9], 9)
-puzzle = solve(puzzle, puzzle:getPosition(10), puzzle:getGoals()[10], 10)
-
-local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 2})
-puzzle = movedPuzzle
-
-puzzle:unlock(puzzle:getBoardSize(), 2)
-puzzle:unlock(puzzle:getBoardSize(), 3)
-puzzle:move(RIGHT, true, true)
-puzzle:move(DOWN, true, true)
-puzzle:lockPosition(puzzle:getBoardSize() - 1, 2)
-puzzle:lockPosition(puzzle:getBoardSize(), 2)
-puzzle:prettyPrint()
-
-puzzle = solve(puzzle, puzzle:getPosition(12), puzzle:getGoals()[12], 12)
-
-local value = 22
-local location = puzzle:getPosition(value)
-if location.x == 2 then
-    print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
-    local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
-    local priorGoal = puzzle:getGoals()[value]
-    -- change goal so we can move the 5 out of the way
-    newGoals[value] = newLocation
-    puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
-    -- fix goal position back to normal
-    newGoals[value] = priorGoal
-    -- remove the lock that gets placed
-    puzzle:unlock(newLocation.x, newLocation.y)
-end
-
--- This is modifying the goals table so that our algorithm paths to the right spot
-newGoals[puzzle:getBoardSize() * 3 + 2] = {y = puzzle:getBoardSize(), x = 2}
-newGoals[puzzle:getBoardSize() * 4 + 2] = {y = puzzle:getBoardSize(), x = 3}
-
-puzzle = solve(puzzle, puzzle:getPosition(17), puzzle:getGoals()[17], 17)
-puzzle = solve(puzzle, puzzle:getPosition(22), puzzle:getGoals()[22], 22)
-
-local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = 2, y = puzzle:getBoardSize() - 1})
-puzzle = movedPuzzle
-
-puzzle:unlock(2, puzzle:getBoardSize())
-puzzle:unlock(3, puzzle:getBoardSize())
-puzzle:move(DOWN, true, true)
-puzzle:move(RIGHT, true, true)
-puzzle:lockPosition(2, puzzle:getBoardSize())
-puzzle:lockPosition(2, puzzle:getBoardSize())
-puzzle:prettyPrint()
-
-local fiveByFiveToThreeByThreeMap = {}
-fiveByFiveToThreeByThreeMap[13] = 1
-fiveByFiveToThreeByThreeMap[14] = 2
-fiveByFiveToThreeByThreeMap[15] = 3
-fiveByFiveToThreeByThreeMap[18] = 4
-fiveByFiveToThreeByThreeMap[19] = 5
-fiveByFiveToThreeByThreeMap[20] = 6
-fiveByFiveToThreeByThreeMap[23] = 7
-fiveByFiveToThreeByThreeMap[24] = 8
-fiveByFiveToThreeByThreeMap[0] = 0
-
-local threeByThree = {}
-for i = 1, 3 do
-    table.insert(threeByThree, {})
-    for j = 1, 3 do
-        table.insert(threeByThree[i], 0)
+    local value = 5
+    local location = puzzle:getPosition(value)
+    if location.y == 1 or (location.x > 4 and location.y < 3) then
+        print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+        local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
+        local priorGoal = puzzle:getGoals()[value]
+        -- change goal so we can move the 5 out of the way
+        newGoals[value] = newLocation
+        puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+        -- fix goal position back to normal
+        newGoals[value] = priorGoal
+        -- remove the lock that gets placed
+        puzzle:unlock(newLocation.x, newLocation.y)
     end
-end
 
+    puzzle = solve(puzzle, puzzle:getPosition(4), puzzle:getGoals()[4], 4)
+    -- prettyPrint(puzzle:getLockedPositions())
+    puzzle:prettyPrint()
+    puzzle = solve(puzzle, puzzle:getPosition(5), puzzle:getGoals()[5], 5)
+    -- prettyPrint(puzzle:getLockedPositions())
+    puzzle:prettyPrint()
 
-local board = puzzle:getBoard()
-for iy = 3, #board do
-    for ix = 3, #board[iy] do
-        threeByThree[iy - 2][ix - 2] = fiveByFiveToThreeByThreeMap[board[iy][ix]]
+    -- Get the directions to move the 0 to x = boardSize - 1, and y = 1 to move the 4 and 5 (in a 5x5) into place
+    local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 1})
+    puzzle = movedPuzzle
+    puzzle:prettyPrint()
+    prettyPrint(puzzle:getLockedPositions())
+
+    puzzle:unlock(puzzle:getBoardSize(), 1)
+    puzzle:unlock(puzzle:getBoardSize(), 2)
+    puzzle:move(RIGHT, false, true)
+    puzzle:move(DOWN, false, true)
+    puzzle:lockPosition(puzzle:getBoardSize() - 1, 1)
+    puzzle:lockPosition(puzzle:getBoardSize(), 1)
+
+    puzzle = solve(puzzle, puzzle:getPosition(6), puzzle:getGoals()[6], 6)
+    -- print("11!!!!")
+
+    puzzle = solve(puzzle, puzzle:getPosition(11), puzzle:getGoals()[11], 11)
+
+    -- This is modifying the goals table so that our algorithm paths to the right spot
+    newGoals[puzzle:getBoardSize() * 3 + 1] = {y = puzzle:getBoardSize(), x = 1}
+    newGoals[puzzle:getBoardSize() * 4 + 1] = {y = puzzle:getBoardSize(), x = 2}
+
+    local value = 21
+    local location = puzzle:getPosition(value)
+    if location.x == 1 or (location.y > 3 and location.x < 4) then
+        local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
+        local priorGoal = puzzle:getGoals()[value]
+        -- change goal so we can move the 5 out of the way
+        newGoals[value] = newLocation
+        puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+        -- fix goal position back to normal
+        newGoals[value] = priorGoal
+        -- remove the lock that gets placed
+        puzzle:unlock(newLocation.x, newLocation.y)
     end
-end
 
-local threeByThreePuzzle = Puzzle:new(3, threeByThree)
-threeByThreePuzzle:generateWinningString()
-threeByThreePuzzle:prettyPrint()
+    puzzle = solve(puzzle, puzzle:getPosition(16), puzzle:getGoals()[16], 16)
+    puzzle = solve(puzzle, puzzle:getPosition(21), puzzle:getGoals()[21], 21)
 
-local directions = idaStar(threeByThreePuzzle)
-for i = 1, #directions do
-    local dir = directions[i].direction
-    if dir == "LEFT" then
-        puzzle:move(LEFT)
-    elseif dir == "RIGHT" then
-        puzzle:move(RIGHT)
-    elseif dir == "UP" then
-        puzzle:move(UP)
-    elseif dir == "DOWN" then
-        puzzle:move(DOWN)
+    local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = 1, y = puzzle:getBoardSize() - 1})
+    puzzle = movedPuzzle
+
+    puzzle:unlock(1, puzzle:getBoardSize())
+    puzzle:unlock(2, puzzle:getBoardSize())
+
+    puzzle:move(DOWN, true, true)
+    puzzle:move(RIGHT, true, true)
+    puzzle:lockPosition(1, puzzle:getBoardSize() - 1)
+    puzzle:lockPosition(1, puzzle:getBoardSize())
+
+    puzzle = solve(puzzle, puzzle:getPosition(7), puzzle:getGoals()[7], 7)
+    puzzle = solve(puzzle, puzzle:getPosition(8), puzzle:getGoals()[8], 8)
+
+    local value = 10
+    local location = puzzle:getPosition(value)
+    if location.y == 2 or (location.x > 3 and location.y < 4) then
+        print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+        local newLocation = {x = location.x, y = location.y + math.floor(puzzle:getBoardSize() / 2)}
+        local priorGoal = puzzle:getGoals()[value]
+        -- change goal so we can move the 5 out of the way
+        newGoals[value] = newLocation
+        puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+        -- fix goal position back to normal
+        newGoals[value] = priorGoal
+        -- remove the lock that gets placed
+        puzzle:unlock(newLocation.x, newLocation.y)
     end
+
+    -- This is modifying the goals table so that our algorithm paths to the right spot
+    newGoals[puzzle:getBoardSize() * 2 -1] = {y = 2, x = puzzle:getBoardSize()}
+    newGoals[puzzle:getBoardSize() * 2] = {y = 3, x = puzzle:getBoardSize()}
+
+    puzzle = solve(puzzle, puzzle:getPosition(9), puzzle:getGoals()[9], 9)
+    puzzle = solve(puzzle, puzzle:getPosition(10), puzzle:getGoals()[10], 10)
+
+    local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = puzzle:getBoardSize() - 1, y = 2})
+    puzzle = movedPuzzle
+
+    puzzle:unlock(puzzle:getBoardSize(), 2)
+    puzzle:unlock(puzzle:getBoardSize(), 3)
+    puzzle:move(RIGHT, true, true)
+    puzzle:move(DOWN, true, true)
+    puzzle:lockPosition(puzzle:getBoardSize() - 1, 2)
+    puzzle:lockPosition(puzzle:getBoardSize(), 2)
+    puzzle:prettyPrint()
+
+    puzzle = solve(puzzle, puzzle:getPosition(12), puzzle:getGoals()[12], 12)
+
+    local value = 22
+    local location = puzzle:getPosition(value)
+    if location.x == 2 or (location.y > 3 and location.x < 4) then
+        print("NEED TO MOVE " .. value .. " OUT OF THE WAY")
+        local newLocation = {x = location.x + math.floor(puzzle:getBoardSize() / 2), y = location.y}
+        local priorGoal = puzzle:getGoals()[value]
+        -- change goal so we can move the 5 out of the way
+        newGoals[value] = newLocation
+        puzzle = solve(puzzle, puzzle:getPosition(value), puzzle:getGoals()[value], value)
+        -- fix goal position back to normal
+        newGoals[value] = priorGoal
+        -- remove the lock that gets placed
+        puzzle:unlock(newLocation.x, newLocation.y)
+    end
+
+    -- This is modifying the goals table so that our algorithm paths to the right spot
+    newGoals[puzzle:getBoardSize() * 3 + 2] = {y = puzzle:getBoardSize(), x = 2}
+    newGoals[puzzle:getBoardSize() * 4 + 2] = {y = puzzle:getBoardSize(), x = 3}
+
+    puzzle = solve(puzzle, puzzle:getPosition(17), puzzle:getGoals()[17], 17)
+    puzzle = solve(puzzle, puzzle:getPosition(22), puzzle:getGoals()[22], 22)
+
+    local directions, movedPuzzle = pathBlankToPosition(puzzle, {x = 2, y = puzzle:getBoardSize() - 1})
+    puzzle = movedPuzzle
+
+    puzzle:unlock(2, puzzle:getBoardSize())
+    puzzle:unlock(3, puzzle:getBoardSize())
+    puzzle:move(DOWN, true, true)
+    puzzle:move(RIGHT, true, true)
+    puzzle:lockPosition(2, puzzle:getBoardSize())
+    puzzle:lockPosition(2, puzzle:getBoardSize())
+    puzzle:prettyPrint()
+
+    local fiveByFiveToThreeByThreeMap = {}
+    fiveByFiveToThreeByThreeMap[13] = 1
+    fiveByFiveToThreeByThreeMap[14] = 2
+    fiveByFiveToThreeByThreeMap[15] = 3
+    fiveByFiveToThreeByThreeMap[18] = 4
+    fiveByFiveToThreeByThreeMap[19] = 5
+    fiveByFiveToThreeByThreeMap[20] = 6
+    fiveByFiveToThreeByThreeMap[23] = 7
+    fiveByFiveToThreeByThreeMap[24] = 8
+    fiveByFiveToThreeByThreeMap[0] = 0
+
+    local threeByThree = {}
+    for i = 1, 3 do
+        table.insert(threeByThree, {})
+        for j = 1, 3 do
+            table.insert(threeByThree[i], 0)
+        end
+    end
+
+
+    local board = puzzle:getBoard()
+    for iy = 3, #board do
+        for ix = 3, #board[iy] do
+            threeByThree[iy - 2][ix - 2] = fiveByFiveToThreeByThreeMap[board[iy][ix]]
+        end
+    end
+
+    local threeByThreePuzzle = Puzzle:new(3, threeByThree)
+    threeByThreePuzzle:generateWinningString()
+    threeByThreePuzzle:prettyPrint()
+
+    local directions = idaStar(threeByThreePuzzle)
+    for i = 1, #directions do
+        local dir = directions[i].direction
+        if dir == "LEFT" then
+            puzzle:move(LEFT)
+        elseif dir == "RIGHT" then
+            puzzle:move(RIGHT)
+        elseif dir == "UP" then
+            puzzle:move(UP)
+        elseif dir == "DOWN" then
+            puzzle:move(DOWN)
+        end
+    end
+
+    local directions = puzzle:getDirections()
+
+    local after = os.clock()
+    runs = runs + 1
+    totalMoves = totalMoves + #directions
+    totalTime = totalTime + (after - before)
+    local output = string.format("runs: " .. runs .. ". %0.6f seconds (average: " .. totalTime / runs .. ") " .. #directions .. " moves (average: " .. totalMoves / runs .. ") in state " .. puzzle:serialize() .. " starting: " .. startingPosition, after - before)
+    print(output)
+    assert(puzzle:serialize() == "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-0")
+
+    local file = io.open("runs.log", "a")
+
+    -- Check if the file was successfully opened
+    if file then
+        -- Write the multiline string to the file
+        file:write(output, "\n")
+        
+        -- Close the file
+        file:close()
+    else
+        print("Failed to open the file.")
+    end
+
+    puzzle:prettyPrint()
 end
-
-local directions = puzzle:getDirections()
-
-local after = os.clock()
-print(string.format("Loop took %0.6f seconds to run in " .. #directions .. " moves in state " .. puzzle:serialize() .. " starting: " .. startingPosition, after - before))
-assert(puzzle:serialize() == "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-0")
-
 
 
 -- -- This is modifying the goals table so that our algorithm 
