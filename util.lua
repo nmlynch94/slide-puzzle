@@ -69,3 +69,40 @@ function map(tbl, f)
     end
     return t
 end
+
+function printDirectionsTenPerLine(directions)
+    if not directions or #directions == 0 then
+        print("No directions to display.")
+        return
+    end
+
+    local entriesPerLine = 10
+    local count = 0
+    local line = ""
+
+    for i, dir in ipairs(directions) do
+        line = line .. dir.direction
+        count = count + 1
+        -- Check if we should add a comma
+        if i < #directions then
+            line = line .. ", "
+        end
+        -- Check if we've reached 10 entries or the end of the list
+        if count == entriesPerLine or i == #directions then
+            print(line)
+            line = ""
+            count = 0
+        end
+    end
+end
+
+function split (inputstr, sep)
+    if sep == nil then
+       sep = "%s"
+    end
+    local t={}
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+       table.insert(t, str)
+    end
+    return t
+ end

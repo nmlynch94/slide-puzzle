@@ -49,6 +49,7 @@ function Puzzle:new(boardSize, initialState)
             instance.board[y][x] = x + (y-1) * boardSize
         end
     end
+    instance.board[boardSize][boardSize] = 0
 
     instance.goals = {}
     for iy, row in ipairs(instance.board) do
@@ -142,7 +143,7 @@ function Puzzle:generateWinningString()
     for y = 1, self.boardSize do
         table.insert(tempBoard, {})
         for x = 1, self.boardSize do
-            tempBoard[y][x] = x + (y-1) * self.boardSize
+            tempBoard[y][x] = math.floor(tonumber(x + (y-1) * self.boardSize))
         end
     end
     tempBoard[self.boardSize][self.boardSize] = 0
@@ -155,6 +156,7 @@ function Puzzle:generateWinningString()
     end
     stateArray[#stateArray] = 0
     self.winningPuzzleString = table.concat(stateArray, "-")
+    return self
 end
 
 function Puzzle:getWinningString()
@@ -216,12 +218,13 @@ end
 
 -- Add a way to shuffle so we can generate solvable puzzles easily by shuffling from a solved state
 function Puzzle:shuffle()
-    local nShuffles = 1000
+    local nShuffles = 100
     for i = 1, nShuffles, 1 do
         local randomIndex = math.random(1, #DIRECTIONS)
         local direction = DIRECTIONS[randomIndex]
         self:move(direction, false, false, false)
     end
+    return self
 end
 
 -- Allow is to update the goal position for a specific tile. This is 
@@ -309,6 +312,25 @@ end
 
 function Puzzle:checkWin()
     return self.serialize(self) == self.winningPuzzleString
+end
+
+function Puzzle:playDirections(directions)
+    for i = 1, #directions do
+        local dir = directions[i].direction
+        if dir == "LEFT" then
+            self:move(LEFT)
+        elseif dir == "RIGHT" then
+            self:move(RIGHT)
+        elseif dir == "UP" then
+            self:move(UP)
+        elseif dir == "DOWN" then
+            self:move(DOWN)
+        else
+            prettyPrint(dir)
+            error("Wrong direction passed")
+        end
+    end
+    return self
 end
 
 function Puzzle:getHeuristic()
