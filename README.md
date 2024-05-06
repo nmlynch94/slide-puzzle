@@ -48,4 +48,4 @@ UP, UP, RIGHT, DOWN, LEFT, UP, RIGHT, DOWN, RIGHT, UP,
 LEFT, DOWN, DOWN, RIGHT, UP, LEFT, DOWN, LEFT, UP, RIGHT,
 ```
 
-On my machine it solves in an average of 253 moves in ~7 seconds for a randomly generated puzzle.
+On my machine it solves in an average of 253 moves in ~7 seconds for a randomly generated 5x5 puzzle shuffled with 1000 moves.
