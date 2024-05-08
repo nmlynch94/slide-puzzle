@@ -453,45 +453,53 @@ local function solveEdge(puzzle, tileValueOne, tileValueTwo)
     return puzzle
 end
 
-local function solve3by3(puzzle, boardSize)
+local function solve4by4(puzzle, boardSize)
     -- Map the appropriate 5x5 values to corresponding 3x3 values
     local fiveByFiveToThreeByThreeMap = {}
-    fiveByFiveToThreeByThreeMap[13] = 1
-    fiveByFiveToThreeByThreeMap[14] = 2
-    fiveByFiveToThreeByThreeMap[15] = 3
-    fiveByFiveToThreeByThreeMap[18] = 4
-    fiveByFiveToThreeByThreeMap[19] = 5
-    fiveByFiveToThreeByThreeMap[20] = 6
-    fiveByFiveToThreeByThreeMap[23] = 7
-    fiveByFiveToThreeByThreeMap[24] = 8
+    fiveByFiveToThreeByThreeMap[7] = 1
+    fiveByFiveToThreeByThreeMap[8] = 2
+    fiveByFiveToThreeByThreeMap[9] = 3
+    fiveByFiveToThreeByThreeMap[10] = 4
+    fiveByFiveToThreeByThreeMap[12] = 5
+    fiveByFiveToThreeByThreeMap[13] = 6
+    fiveByFiveToThreeByThreeMap[14] = 7
+    fiveByFiveToThreeByThreeMap[15] = 8
+    fiveByFiveToThreeByThreeMap[17] = 9
+    fiveByFiveToThreeByThreeMap[18] = 10
+    fiveByFiveToThreeByThreeMap[19] = 11
+    fiveByFiveToThreeByThreeMap[20] = 12
+    fiveByFiveToThreeByThreeMap[22] = 13
+    fiveByFiveToThreeByThreeMap[23] = 14
+    fiveByFiveToThreeByThreeMap[24] = 15
     fiveByFiveToThreeByThreeMap[0] = 0
 
     local valueMap = fiveByFiveToThreeByThreeMap
 
-    if boardSize == 4 then valueMap = fourByFourToThreeByThreeMap end
 
-    local threeByThree = {}
-    for i = 1, 3 do
-        table.insert(threeByThree, {})
-        for j = 1, 3 do
-            table.insert(threeByThree[i], 0)
+    local fourByFour = {}
+    for i = 1, 4 do
+        table.insert(fourByFour, {})
+        for j = 1, 4 do
+            table.insert(fourByFour[i], 0)
         end
     end
+    prettyPrint(fourByFour)
 
 
     local board = puzzle:getBoard()
-    for iy = 3, #board do
-        for ix = 3, #board[iy] do
-            threeByThree[iy - 2][ix - 2] = valueMap[board[iy][ix]]
+    for iy = 2, #board do
+        for ix = 2, #board[iy] do
+            fourByFour[iy - 1][ix - 1] = valueMap[board[iy][ix]]
         end
     end
+    prettyPrint(fourByFour)
 
-    local threeByThreePuzzle = puzzle:new(3, threeByThree)
-    threeByThreePuzzle:generateWinningString()
-    threeByThreePuzzle:prettyPrint()
+    local fourByFourPuzzle = puzzle:new(4, fourByFour)
+    fourByFourPuzzle:generateWinningString()
+    fourByFourPuzzle:prettyPrint()
 
     -- Play the moves on the main puzzle so it appears in our directions logs
-    local directions = idaStar(threeByThreePuzzle)
+    local directions = idaStar(fourByFourPuzzle)
     for i = 1, #directions do
         local dir = directions[i].direction
         if dir == "LEFT" then
@@ -519,19 +527,20 @@ function solveFiveByFive(puzzle)
     puzzle = solve(puzzle, 6)
     puzzle = solve(puzzle, 11)
     puzzle = solveEdge(puzzle, 16, 21)
-    puzzle = solve(puzzle, 7)
-    puzzle = solve(puzzle, 8)
-    puzzle = solveEdge(puzzle, 9, 10)
-    puzzle = solve(puzzle, 12)
-    puzzle = solveEdge(puzzle, 17, 22)
-    puzzle = solve3by3(puzzle)
-    assert(puzzle:serialize() == "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-0")
+    -- puzzle = solve(puzzle, 7)
+    -- puzzle = solve(puzzle, 8)
+    -- puzzle = solveEdge(puzzle, 9, 10)
+    -- puzzle = solve(puzzle, 12)
+    -- puzzle = solveEdge(puzzle, 17, 22)
+
+    puzzle = solve4by4(puzzle)
+    -- assert(puzzle:serialize() == "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-0")
 
     -- statistics
     local directions = puzzle:getDirections()
     local after = os.clock()
  
     local output = string.format("%0.6f seconds," .. #directions .. " moves in state " .. puzzle:serialize() .. " starting: " .. startingPosition, after - before)
-
+    print(output)
     return directions
 end

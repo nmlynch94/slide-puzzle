@@ -172,7 +172,7 @@ function Puzzle:serialize()
     local stateArray = {}
     for y = 1, self.boardSize do
         for x = 1, self.boardSize do
-            table.insert(stateArray, self.board[y][x])
+            table.insert(stateArray, math.floor(self.board[y][x]))
         end
     end
     return table.concat(stateArray, "-")
@@ -218,7 +218,7 @@ end
 
 -- Add a way to shuffle so we can generate solvable puzzles easily by shuffling from a solved state
 function Puzzle:shuffle()
-    local nShuffles = 100
+    local nShuffles = 120
     for i = 1, nShuffles, 1 do
         local randomIndex = math.random(1, #DIRECTIONS)
         local direction = DIRECTIONS[randomIndex]
@@ -389,7 +389,7 @@ function Puzzle:getHeuristic()
         end
     end
 
-    return h
+    return h * 2
 end
 
 return Puzzle
