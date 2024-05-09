@@ -1,6 +1,6 @@
 # Project Name
 
-PoC to programmatically solve a 5x5, 4x4, and 3x3 slide puzzle solver. It can currently handle 5x5 and 3x3 puzzles very easily, but I have not finished the implementation to make 4x4 fast. It uses ida* and may take a long time to solve depending on the complexity of the solution needed.
+PoC to programmatically solve a 5x5, 4x4, and 3x3 slide puzzle solver. It uses ida* and may take a long time to solve depending on the complexity of the solution needed.
 
 ## How it works
 3x3 and 4x4 puzzles can be solved feasibly using ida*. However, 5x5 the amount of paths we need to search becomes overly complex to feasibly do. To get around this, we use a combination of a* and pre-defined algorthims to move tiles across the board to solve columns and rows 1, and 2. Then, we use ida* on the remaining 3x3.
