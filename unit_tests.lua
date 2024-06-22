@@ -141,7 +141,8 @@ local winningPuzzleString = "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-0"
 --    --     print(directions[i].direction)
 --    -- end
 --end
-local groupOne = { 1, 2, 5, 6 }
+--local groupOne = { 1, 2, 5, 6 }
+local groupOne = { 1, 2, 3 }
 local groupTwo = { 3, 4, 7, 8 }
 local groupThree = { 9, 10, 13, 14 }
 local groupFour = { 11, 12, 15 }

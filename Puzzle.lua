@@ -24,6 +24,7 @@ function Puzzle:new(boardSize, initialState)
     instance.blankPos = {x = boardSize, y = boardSize}
     instance.directions = {}
     instance.count = 0
+    instance.correlation_id = os.time(os.date("!*t"))
 
     -- set blank position from the given initial state
     if initialState ~= nil then
@@ -121,6 +122,7 @@ function Puzzle:clone()
     copy.goals = self.goals
     copy.directions = self.directions
     copy.count = self.count
+    copy.correlation_id = self.correlation_id
 
     copy.lockedPositions = self.lockedPositions
 
@@ -136,6 +138,7 @@ end
 
 function Puzzle:increment()
     self.count = self.count + 1
+    return self.count
 end
 
 function Puzzle:getGoals()
