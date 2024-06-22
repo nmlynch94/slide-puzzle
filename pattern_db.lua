@@ -62,6 +62,7 @@ function generatePatternDb(group)
                 if (has_value(tileSwappedWithBlank, group)) then
                     print(newMoves[i].puzzle:serializeGroup(group) .. " --> " .. newMoves[i].puzzle.count)
                     newMoves[i].puzzle:increment()
+                    print("JJJJJJJJJJJJJJJJJJJJJJJ")
                 end
                 local groupHash = newMoves[i].puzzle:serializeGroup(group)
 
@@ -74,7 +75,6 @@ function generatePatternDb(group)
                 visited[newMoves[i].puzzle:serializeGroup(group, false)] = "OCCUPIED"
                 table.insert(stack, { puzzle = newMoves[i].puzzle})
             end
-            ::continue_while::
         end
         return closedList
     end
