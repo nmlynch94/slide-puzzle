@@ -1,5 +1,5 @@
 local Puzzle = require("Puzzle")
-
+require('pattern_db')
 -- local moveTests = {
 --     {
 --         preMoveState = {
@@ -106,38 +106,50 @@ local Puzzle = require("Puzzle")
 local winningPuzzleString = "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-0"
 
 
-for i = 1, 100 do
-    local puzzle = Puzzle:new(5)
-    puzzle:shuffle()
-    puzzle:generateWinningString()
+--for i = 1, 100 do
+--    local puzzle = Puzzle:new(5)
+--    puzzle:shuffle()
+--    puzzle:generateWinningString()
+--
+--    local initialState = puzzle:getBoard()
+--    assert(puzzle:serialize() ~= winningPuzzleString)
+--    local directions = puzzle:solve()
+--
+--    -- verify the moves solve when applied to separate puzzle with the same initial state
+--    -- local puzzleToSolve = Puzzle:new(5, initialState)
+--    -- assert(puzzleToSolve:serialize() ~= winningPuzzleString)
+--    -- for i = 1, #directions do
+--    --     local dir = directions[i].direction
+--    --     if dir == "LEFT" then
+--    --         puzzleToSolve:move(LEFT)
+--    --     elseif dir == "RIGHT" then
+--    --         puzzleToSolve:move(RIGHT)
+--    --     elseif dir == "UP" then
+--    --         puzzleToSolve:move(UP)
+--    --     elseif dir == "DOWN" then
+--    --         puzzleToSolve:move(DOWN)
+--    --     else
+--    --         prettyPrint(dir)
+--    --         error("Wrong direction passed")
+--    --     end
+--    -- end
+--    -- assert(#directions < 400, "Directions are higher than expected")
+--    -- print(#directions)
+--    -- print(puzzleToSolve:serialize() .. " : " .. winningPuzzleString)
+--    -- assert(puzzleToSolve:serialize() == winningPuzzleString)
+--    -- for i = 1, #directions do
+--    --     print(directions[i].direction)
+--    -- end
+--end
+local groupOne = { 1, 2, 5, 6 }
+local groupTwo = { 3, 4, 7, 8 }
+local groupThree = { 9, 10, 13, 14 }
+local groupFour = { 11, 12, 15 }
+local pathsOne = generatePatternDb(groupOne)
+--local pathsTwo = generatePatternDb(groupTwo)
+--local pathsThree = generatePatternDb(groupThree)
+--local pathsFour = generatePatternDb(groupFour)
 
-    local initialState = puzzle:getBoard()
-    assert(puzzle:serialize() ~= winningPuzzleString)
-    local directions = puzzle:solve()
-
-    -- verify the moves solve when applied to separate puzzle with the same initial state
-    -- local puzzleToSolve = Puzzle:new(5, initialState)
-    -- assert(puzzleToSolve:serialize() ~= winningPuzzleString)
-    -- for i = 1, #directions do
-    --     local dir = directions[i].direction
-    --     if dir == "LEFT" then
-    --         puzzleToSolve:move(LEFT)
-    --     elseif dir == "RIGHT" then
-    --         puzzleToSolve:move(RIGHT)
-    --     elseif dir == "UP" then
-    --         puzzleToSolve:move(UP)
-    --     elseif dir == "DOWN" then
-    --         puzzleToSolve:move(DOWN)
-    --     else
-    --         prettyPrint(dir)
-    --         error("Wrong direction passed")
-    --     end
-    -- end
-    -- assert(#directions < 400, "Directions are higher than expected")
-    -- print(#directions)
-    -- print(puzzleToSolve:serialize() .. " : " .. winningPuzzleString)
-    -- assert(puzzleToSolve:serialize() == winningPuzzleString)
-    -- for i = 1, #directions do
-    --     print(directions[i].direction)
-    -- end
-end
+--print("ONE: " .. tablelength(pathsOne) .. " TWO: " .. tablelength(pathsTwo) .. " THREE: " .. tablelength(pathsThree) .. " FOUR: " .. tablelength(pathsFour))
+print("ONE: " .. tablelength(pathsOne))
+prettyPrint(pathsOne)

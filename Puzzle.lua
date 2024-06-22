@@ -23,6 +23,7 @@ function Puzzle:new(boardSize, initialState)
     instance.board = {}
     instance.blankPos = {x = boardSize, y = boardSize}
     instance.directions = {}
+    instance.count = 0
 
     -- set blank position from the given initial state
     if initialState ~= nil then
@@ -119,6 +120,7 @@ function Puzzle:clone()
     copy.winningPuzzleString = self.winningPuzzleString  -- Copy the string if needed.
     copy.goals = self.goals
     copy.directions = self.directions
+    copy.count = self.count
 
     copy.lockedPositions = self.lockedPositions
 
@@ -130,6 +132,10 @@ function Puzzle:simulateMove(dir)
     local simPuzzle = self.clone(self)
     local moveSuccessful = simPuzzle:move(dir, false, false, false)
     return moveSuccessful, simPuzzle
+end
+
+function Puzzle:increment()
+    self.count = self.count + 1
 end
 
 function Puzzle:getGoals()
@@ -165,6 +171,27 @@ end
 
 function Puzzle:getBoardSize()
     return self.boardSize
+end
+
+function Puzzle:serializeGroup(group, replaceBlank)
+    local stateArray = {}
+    for y = 1, self.boardSize do
+        for x = 1, self.boardSize do
+            local numValue = math.floor(self.board[y][x])
+            if (numValue == 0 and (replaceBlank == true or replaceBlank == nil)) then
+                table.insert(stateArray, 99)
+                goto continue
+            end
+            if (not has_value(numValue, group) and numValue ~= 0) then
+                table.insert(stateArray, 99)
+            else
+                table.insert(stateArray, math.floor(self.board[y][x]))
+            end
+            ::continue::
+        end
+    end
+    local stateArrayString = table.concat(stateArray, "-")
+    return stateArrayString
 end
 
 -- Convert a 2d array into a one-line string separated by '-'
@@ -321,7 +348,7 @@ function Puzzle:playDirections(directions)
             self:move(LEFT)
         elseif dir == "RIGHT" then
             self:move(RIGHT)
-        elseif dir == "UP" then
+       elseif dir == "UP" then
             self:move(UP)
         elseif dir == "DOWN" then
             self:move(DOWN)

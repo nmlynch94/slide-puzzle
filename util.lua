@@ -106,3 +106,19 @@ function split (inputstr, sep)
     end
     return t
  end
+
+function has_value (val, tab)
+  for index, value in ipairs(tab) do
+      if value == val then
+          return true
+      end
+  end
+
+  return false
+end
+
+function tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end

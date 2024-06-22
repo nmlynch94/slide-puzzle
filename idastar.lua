@@ -527,14 +527,8 @@ function solveFiveByFive(puzzle)
     puzzle = solve(puzzle, 6)
     puzzle = solve(puzzle, 11)
     puzzle = solveEdge(puzzle, 16, 21)
-    -- puzzle = solve(puzzle, 7)
-    -- puzzle = solve(puzzle, 8)
-    -- puzzle = solveEdge(puzzle, 9, 10)
-    -- puzzle = solve(puzzle, 12)
-    -- puzzle = solveEdge(puzzle, 17, 22)
 
     puzzle = solve4by4(puzzle)
-    -- assert(puzzle:serialize() == "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-0")
 
     -- statistics
     local directions = puzzle:getDirections()
