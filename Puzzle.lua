@@ -1,6 +1,5 @@
 require('util')
 require('idastar')
-
 math.randomseed(os.time())
 
 -- constants
@@ -283,9 +282,9 @@ function Puzzle:move(direction, debug, failOnLock, record)
         failOnLock = true
     end
     if debug == nil then
-        debug = true
+        debug = false
     end
-    if debug then
+    if  false  then
         print("Moving....", direction.x, direction.y)
 
         self:prettyPrint()
@@ -316,7 +315,7 @@ function Puzzle:move(direction, debug, failOnLock, record)
     self.board[newBlankPosition.y][newBlankPosition.x] = 0
     self.blankPos = newBlankPosition
 
-    if debug then
+    if false then
         self:prettyPrint()
         print("--------------")
     end
@@ -348,13 +347,13 @@ function Puzzle:playDirections(directions)
     for i = 1, #directions do
         local dir = directions[i].direction
         if dir == "LEFT" then
-            self:move(LEFT)
+            self:move(LEFT, false)
         elseif dir == "RIGHT" then
-            self:move(RIGHT)
+            self:move(RIGHT, false)
        elseif dir == "UP" then
-            self:move(UP)
+            self:move(UP, false)
         elseif dir == "DOWN" then
-            self:move(DOWN)
+            self:move(DOWN, false)
         else
             prettyPrint(dir)
             error("Wrong direction passed")

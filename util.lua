@@ -107,14 +107,22 @@ function split (inputstr, sep)
     return t
  end
 
-function has_value (val, tab)
-  for index, value in ipairs(tab) do
-      if value == val then
-          return true
-      end
-  end
+--function has_value (val, tab)
+--  for index, value in ipairs(tab) do
+--      if value == val then
+--          return true
+--      end
+--  end
+--
+--  return false
+--end
 
-  return false
+function has_value(val, tab)
+    for i = 1, #tab do
+        if val == tab[i] then
+            return true
+        end
+    end
 end
 
 function tablelength(T)

@@ -1,5 +1,6 @@
 local Puzzle = require("Puzzle")
 require('pattern_db')
+local profile = require('profile')
 -- local moveTests = {
 --     {
 --         preMoveState = {
@@ -132,7 +133,7 @@ local winningPuzzleString = "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-0"
 --    --         prettyPrint(dir)
 --    --         error("Wrong direction passed")
 --    --     end
---    -- end
+--    -- enD
 --    -- assert(#directions < 400, "Directions are higher than expected")
 --    -- print(#directions)
 --    -- print(puzzleToSolve:serialize() .. " : " .. winningPuzzleString)
@@ -141,16 +142,16 @@ local winningPuzzleString = "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-0"
 --    --     print(directions[i].direction)
 --    -- end
 --end
---local groupOne = { 1, 2, 5, 6 }
-local groupOne = { 1, 2, 3 }
+local groupOne = { 1, 2, 5, 6 }
 local groupTwo = { 3, 4, 7, 8 }
 local groupThree = { 9, 10, 13, 14 }
 local groupFour = { 11, 12, 15 }
-local pathsOne = generatePatternDb(groupOne)
+local pathsOne = generatePatternDb(groupOne, 4)
+writeToFile('patterndb.txt', pathsOne)
 --local pathsTwo = generatePatternDb(groupTwo)
 --local pathsThree = generatePatternDb(groupThree)
 --local pathsFour = generatePatternDb(groupFour)
 
 --print("ONE: " .. tablelength(pathsOne) .. " TWO: " .. tablelength(pathsTwo) .. " THREE: " .. tablelength(pathsThree) .. " FOUR: " .. tablelength(pathsFour))
 print("ONE: " .. tablelength(pathsOne))
-prettyPrint(pathsOne)
+local test = readFromFile('patterndb.txt')

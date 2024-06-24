@@ -41,7 +41,7 @@ local function search(path, g, bound, dirs)
         if #dirs > 0 and -dir.y == dirs[#dirs].y and -dirs[#dirs].x == -dir.x then
             goto continue
         end
-        local validMove, simPuzzle = cur:simulateMove(dir)        
+        local validMove, simPuzzle = cur:simulateMove(dir)
     
         if not validMove or isPuzzleInPath(simPuzzle, path) then
             goto continue
@@ -136,7 +136,7 @@ function pathBlankToPosition(puzzle, target)
         end
 
         -- search the lowest heuristic values first
-        table.sort(newMoves, function (a, b) 
+        table.sort(newMoves, function (a, b)
             return a.h < b.h
         end)
 
@@ -195,13 +195,13 @@ function pathBlankToPosition(puzzle, target)
     for i = #directions, 1, -1 do
         local dir = directions[i]
         if dir == "LEFT" then
-            originalPuzzle:move(LEFT)
+            originalPuzzle:move(LEFT, false)
         elseif dir == "RIGHT" then
-            originalPuzzle:move(RIGHT)
+            originalPuzzle:move(RIGHT, false)
         elseif dir == "UP" then
-            originalPuzzle:move(UP)
+            originalPuzzle:move(UP, false)
         elseif dir == "DOWN" then
-            originalPuzzle:move(DOWN)
+            originalPuzzle:move(DOWN, false)
         end
     end
 
@@ -425,7 +425,6 @@ local function solveEdge(puzzle, tileValueOne, tileValueTwo)
     end
 
     puzzle = solve(puzzle, tileValueOne)
-    puzzle:prettyPrint()
     puzzle = solve(puzzle, tileValueTwo)
 
     local targetBlankPosition
@@ -483,8 +482,6 @@ local function solve4by4(puzzle, boardSize)
             table.insert(fourByFour[i], 0)
         end
     end
-    prettyPrint(fourByFour)
-
 
     local board = puzzle:getBoard()
     for iy = 2, #board do
@@ -492,11 +489,9 @@ local function solve4by4(puzzle, boardSize)
             fourByFour[iy - 1][ix - 1] = valueMap[board[iy][ix]]
         end
     end
-    prettyPrint(fourByFour)
 
     local fourByFourPuzzle = puzzle:new(4, fourByFour)
     fourByFourPuzzle:generateWinningString()
-    fourByFourPuzzle:prettyPrint()
 
     -- Play the moves on the main puzzle so it appears in our directions logs
     local directions = idaStar(fourByFourPuzzle)
