@@ -146,12 +146,15 @@ local groupOne = { 1, 2, 5, 6 }
 local groupTwo = { 3, 4, 7, 8 }
 local groupThree = { 9, 10, 13, 14 }
 local groupFour = { 11, 12, 15 }
-local pathsOne = generatePatternDb(groupOne, 4)
-writeToFile('patterndb.txt', pathsOne)
---local pathsTwo = generatePatternDb(groupTwo)
---local pathsThree = generatePatternDb(groupThree)
---local pathsFour = generatePatternDb(groupFour)
 
---print("ONE: " .. tablelength(pathsOne) .. " TWO: " .. tablelength(pathsTwo) .. " THREE: " .. tablelength(pathsThree) .. " FOUR: " .. tablelength(pathsFour))
-print("ONE: " .. tablelength(pathsOne))
-local test = readFromFile('patterndb.txt')
+local pathsOne = generatePatternDb(groupOne, 4)
+local pathsTwo = generatePatternDb(groupTwo, 4)
+local pathsThree = generatePatternDb(groupThree, 4)
+local pathsFour = generatePatternDb(groupFour, 4)
+local results = {pathsOne, pathsTwo, pathsThree, pathsFour}
+local mergedGroup = {}
+for i = 1, #results do
+    for k,v in pairs(results[i]) do mergedGroup[k] = v end
+end
+
+writeToFile('patterndb', mergedGroup)

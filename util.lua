@@ -107,15 +107,36 @@ function split (inputstr, sep)
     return t
  end
 
---function has_value (val, tab)
---  for index, value in ipairs(tab) do
---      if value == val then
---          return true
---      end
---  end
---
---  return false
---end
+function writeToFile(filename, data)
+    local file = io.open(filename, "w")
+    if not file then
+        error("Could not open file for writing: " .. filename)
+    end
+
+    for key, value in pairs(data) do
+        file:write(key .. "=" .. value .. "\n")
+    end
+
+    file:close()
+end
+
+function readFromFile(filename)
+    local file = io.open(filename, "r")
+    if not file then
+        error("Could not open file for reading: " .. filename)
+    end
+
+    local table = {}
+    for line in file:lines() do
+        local key, value = line:match("([^=]+)=([^=]+)")
+        if key and value then
+            table[key] = tonumber(value) or value
+        end
+    end
+
+    file:close()
+    return table
+end
 
 function has_value(val, tab)
     for i = 1, #tab do

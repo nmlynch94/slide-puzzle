@@ -10,6 +10,13 @@ DOWN = {y = 1, x = 0, direction = "DOWN"}
 LEFT = {y = 0, x =-1 , direction = "LEFT"}
 RIGHT = {y = 0, x = 1, direction = "RIGHT"}
 
+local groups = {
+    { 1, 2, 5, 6 },
+    { 3, 4, 7, 8 },
+    { 9, 10, 13, 14 },
+    { 11, 12, 15 }
+}
+
 DIRECTIONS = {UP, DOWN, LEFT, RIGHT}
 
 local Puzzle = {}
@@ -24,6 +31,7 @@ function Puzzle:new(boardSize, initialState)
     instance.directions = {}
     instance.count = 0
     instance.correlation_id = os.time(os.date("!*t"))
+    instance.patternDb = nil
 
     -- set blank position from the given initial state
     if initialState ~= nil then
@@ -363,62 +371,74 @@ function Puzzle:playDirections(directions)
 end
 
 function Puzzle:getHeuristic()
+    if self.patternDb == nil then
+        self.patternDb = readFromFile('patterndb')
+    end
     local h = 0
-    local valuesInTargetRows = {}
-    local valuesInTargetCols = {}
-
-    for iy = 1, #self.board do
-        local row = self.board[iy]
-        for ix = 1, #row do
-            local col = row[ix]
-            if col == 0 then goto continue_h end -- We don't care about manhattan for the blank tile
-            local desiredPosition = self.goals[col]
-            local currentPosition = {x = ix, y = iy}
-            if desiredPosition.y == currentPosition.y then
-                table.insert(valuesInTargetRows, {currentPosition = currentPosition, desiredPosition = desiredPosition, value = col})
-            end
-            if desiredPosition.x == currentPosition.x then
-                table.insert(valuesInTargetCols, {currentPosition = currentPosition, desiredPosition = desiredPosition, value = col})
-            end
-            local manhattan = math.abs(desiredPosition.x - currentPosition.x) + math.abs(desiredPosition.y - currentPosition.y)
-            h = h + manhattan
-            ::continue_h::
+    for i = 0, #groups do
+        local fileH = self.patternDb[self:serializeGroup(groups[i])]
+        if fileH ~= nil then
+            h = h + fileH
         end
     end
 
-    -- Loop through all values that are currently in their target rows and compare it with every other value. 
-    -- If valueA's current position is left of valueBs current position, and valueA's desired position is right of valueB's desired position
-    -- then that means they are a linear conflict. We only check for left/right vs right/left so it doesn't double-count a conflict
-    for index = 1, #valuesInTargetRows do
-        local item = valuesInTargetRows[index]
-        for index2 = 1, #valuesInTargetRows do
-            local item2 = valuesInTargetRows[index2]
-            if item.currentPosition.y == item2.currentPosition.y then
-                -- if the current positions are different relative directions than desired positions, linear conflict
-                if isRightOf(item.currentPosition, item2.currentPosition) and isLeftOf(item.desiredPosition, item2.desiredPosition) then
-                    -- print(item.value, " and ", item2.value, " are in conflict")
-                    h = h + 2
-                end
-            end
-        end
-    end
-
-    for index = 1, #valuesInTargetCols do
-        local item = valuesInTargetCols[index]
-        for index2 = 1,#valuesInTargetCols do
-            local item2 = valuesInTargetCols[index2]
-            -- If they are in the same column AND it needs to move AND item2 is located in between
-            if item.currentPosition.x == item2.currentPosition.x then
-                -- if the current positions are different relative directions than desired positions, linear conflict
-                if isAbove(item.currentPosition, item2.currentPosition) and isBelow(item.desiredPosition, item2.desiredPosition) then
-                    -- print(item.value, " and ", item2.value, " are in conflict")
-                    h = h + 2
-                end
-            end
-        end
-    end
-
-    return h * 2
+    return h
+    --local h = 0
+    --local valuesInTargetRows = {}
+    --local valuesInTargetCols = {}
+    --
+    --for iy = 1, #self.board do
+    --    local row = self.board[iy]
+    --    for ix = 1, #row do
+    --        local col = row[ix]
+    --        if col == 0 then goto continue_h end -- We don't care about manhattan for the blank tile
+    --        local desiredPosition = self.goals[col]
+    --        local currentPosition = {x = ix, y = iy}
+    --        if desiredPosition.y == currentPosition.y then
+    --            table.insert(valuesInTargetRows, {currentPosition = currentPosition, desiredPosition = desiredPosition, value = col})
+    --        end
+    --        if desiredPosition.x == currentPosition.x then
+    --            table.insert(valuesInTargetCols, {currentPosition = currentPosition, desiredPosition = desiredPosition, value = col})
+    --        end
+    --        local manhattan = math.abs(desiredPosition.x - currentPosition.x) + math.abs(desiredPosition.y - currentPosition.y)
+    --        h = h + manhattan
+    --        ::continue_h::
+    --    end
+    --end
+    --
+    ---- Loop through all values that are currently in their target rows and compare it with every other value.
+    ---- If valueA's current position is left of valueBs current position, and valueA's desired position is right of valueB's desired position
+    ---- then that means they are a linear conflict. We only check for left/right vs right/left so it doesn't double-count a conflict
+    --for index = 1, #valuesInTargetRows do
+    --    local item = valuesInTargetRows[index]
+    --    for index2 = 1, #valuesInTargetRows do
+    --        local item2 = valuesInTargetRows[index2]
+    --        if item.currentPosition.y == item2.currentPosition.y then
+    --            -- if the current positions are different relative directions than desired positions, linear conflict
+    --            if isRightOf(item.currentPosition, item2.currentPosition) and isLeftOf(item.desiredPosition, item2.desiredPosition) then
+    --                -- print(item.value, " and ", item2.value, " are in conflict")
+    --                h = h + 2
+    --            end
+    --        end
+    --    end
+    --end
+    --
+    --for index = 1, #valuesInTargetCols do
+    --    local item = valuesInTargetCols[index]
+    --    for index2 = 1,#valuesInTargetCols do
+    --        local item2 = valuesInTargetCols[index2]
+    --        -- If they are in the same column AND it needs to move AND item2 is located in between
+    --        if item.currentPosition.x == item2.currentPosition.x then
+    --            -- if the current positions are different relative directions than desired positions, linear conflict
+    --            if isAbove(item.currentPosition, item2.currentPosition) and isBelow(item.desiredPosition, item2.desiredPosition) then
+    --                -- print(item.value, " and ", item2.value, " are in conflict")
+    --                h = h + 2
+    --            end
+    --        end
+    --    end
+    --end
+    --
+    --return h * 2
 end
 
 return Puzzle
